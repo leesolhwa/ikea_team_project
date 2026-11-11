@@ -1,0 +1,27 @@
+@font-face{font-family:'Pretendard';src:url('fonts/PretendardVariable.woff2') format('woff2');font-style:normal;font-weight:45 920;font-display:swap}
+.site-header,.preview-header{font-family:'Pretendard',sans-serif;font-synthesis:none;-webkit-font-smoothing:antialiased}
+.site-header{height:100px;padding:0 5%;gap:48px;background:#fff;color:#18201b}
+.brand-logo{display:block;flex:none;width:99px;height:40px;border:0;background:none;border-radius:0;padding:0}
+.brand-logo img{display:block;width:100%;height:100%;object-fit:contain}
+.main-nav{gap:28px}.main-nav a{font-family:inherit;font-size:14px;font-weight:450;letter-spacing:-.15px;transition:color .2s}
+.main-nav a:hover{color:#0051ba;text-decoration:none}
+.header-actions{gap:30px}
+.go-ikea{display:inline-flex;align-items:center;justify-content:space-between;gap:17px;min-height:44px;padding:6px 6px 6px 18px;background:#fff;color:#0051ba;border:1px solid #0051ba24;border-radius:100px;font-family:'Pretendard',sans-serif;font-size:13px;font-weight:650;letter-spacing:.2px;line-height:1;text-decoration:none;transition:background .22s,color .22s,border-color .22s}
+.go-ikea .go-arrow{display:grid;place-items:center;width:30px;height:30px;flex:none;border-radius:50%;background:#ffda1a;color:#0051ba}
+.go-ikea .go-arrow svg{width:16px;height:16px;transition:transform .22s}
+.go-ikea:hover{background:#0051ba;color:#fff;border-color:#0051ba}.go-ikea:hover .go-arrow svg{transform:translate(1px,-1px)}
+.menu-toggle{width:25px;gap:5px}.menu-toggle span{width:21px;height:1.5px}
+.preview-header .brand-logo{width:67px;height:27px;margin:0}
+.preview-header nav{font-family:inherit;font-size:7px;font-weight:450;letter-spacing:.15px;margin-left:12px;color:#18201b}
+.preview-header .go-ikea{min-height:29px;padding:3px 3px 3px 11px;font-size:8px;gap:8px;border-radius:40px}
+.preview-header .go-arrow{width:21px;height:21px}.preview-header .go-arrow svg{width:12px;height:12px}
+.preview-header{height:56px;gap:12px;padding:0 5%}
+.preview-menu{display:grid;gap:3px;padding:7px 0;flex:none}.preview-menu i{display:block;width:12px;height:1px;background:#18201b}
+.comparison[data-view=a] .preview-header,.comparison[data-view=b] .preview-header{height:88px}
+.comparison[data-view=a] .preview-header .brand-logo,.comparison[data-view=b] .preview-header .brand-logo{width:99px;height:40px}
+.comparison[data-view=a] .preview-header nav,.comparison[data-view=b] .preview-header nav{font-size:12px}
+.comparison[data-view=a] .preview-header .go-ikea,.comparison[data-view=b] .preview-header .go-ikea{font-size:12px;min-height:40px;padding:5px 5px 5px 16px;gap:14px}
+.comparison[data-view=a] .preview-header .go-arrow,.comparison[data-view=b] .preview-header .go-arrow{width:28px;height:28px}
+.comparison[data-view=a] .preview-menu i,.comparison[data-view=b] .preview-menu i{width:20px;height:1.5px}
+@media(max-width:700px){.site-header{height:88px;padding:12px 6%;gap:12px 22px;align-content:center}.brand-logo{width:82px;height:33px}.header-actions{gap:18px}.main-nav{gap:18px;margin-top:0;justify-content:flex-start}.main-nav a{font-size:10px}.site-header .go-ikea{min-height:34px;font-size:10px;padding:4px 4px 4px 12px;gap:8px}.site-header .go-arrow{width:24px;height:24px}.site-header .go-arrow svg{width:13px;height:13px}.preview-header nav{font-size:6px;margin-left:2px}.preview-header .brand-logo{width:58px;height:24px}.preview-header{gap:7px}.comparison[data-view=a] .preview-header nav,.comparison[data-view=b] .preview-header nav{font-size:7px}.comparison[data-view=a] .preview-header .brand-logo,.comparison[data-view=b] .preview-header .brand-logo{width:67px;height:27px}.comparison[data-view=a] .preview-header,.comparison[data-view=b] .preview-header{height:60px}}
+@media(prefers-reduced-motion:reduce){.go-ikea,.go-arrow svg{transition:none}}
