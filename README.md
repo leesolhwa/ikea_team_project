@@ -156,6 +156,32 @@ const MODELS = { house: 'assets/models/about/house.glb' };  // null → 임시 �
 ### 섹션 추가·순서 변경
 `src/sections/index.js`의 `HUB_SECTIONS` 배열만 고치면 창문 허브와 미니맵이 따라갑니다.
 
+## 협업 방법 (Git)
+
+`main`은 항상 실행되는 상태로 둡니다. 작업은 브랜치에서 하고 PR로 합칩니다.
+
+```bash
+git pull origin main                  # 1. 시작 전에 최신 main 받기
+git checkout -b rooms/camera-path     # 2. 브랜치 만들기 (섹션명/작업내용)
+# ... 자기 섹션 폴더에서 작업 ...
+git add -A
+git commit -m "rooms: 카메라 이동 경로 수정"
+git push -u origin rooms/camera-path  # 3. 브랜치 올리기
+```
+
+4. GitHub에서 **PR 열기** → 변경 내용을 같이 확인하고 댓글로 의견 남기기
+5. 다른 팀원이 한 명 이상 확인하면 **Merge pull request**, 머지된 브랜치는 삭제
+6. 나머지 팀원은 `git pull origin main`으로 최신 상태 받기
+
+규칙:
+
+- **`main`에 직접 푸시하지 않기.**
+- **PR은 작게, 자주.** 며칠치를 한 번에 올리면 확인이 어렵고 충돌이 커집니다.
+- **공통 파일(`src/core/`, `src/styles/`, `src/main.js`, `index.html`)은 공통 담당자만 수정.** 필요하면 담당자에게 요청하거나 그 수정만 따로 PR로 올립니다.
+- **머지 전에 실행 확인.** `?section=자기섹션`으로 자기 섹션을, 주소 그대로 열어 전체 흐름을 한 번씩 확인합니다.
+- **GLB는 파일당 100MB 이하.** GitHub은 100MB가 넘는 파일을 거부합니다(50MB부터 경고). Blender 원본(`.blend`)은 저장소에 올리지 말고 드라이브 등으로 공유합니다.
+- 충돌이 나면 혼자 덮어쓰지 말고 해당 파일 담당자와 같이 해결합니다.
+
 ## 아직 임시인 것
 
 - 매장 목록·좌표(`stores/data.js`), 메뉴명·가격, 문구는 자리 표시용입니다. 실제 값으로 교체하세요.
