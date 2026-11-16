@@ -1,0 +1,58 @@
+/* 공통 기반: 리셋, 디자인 토큰, 레이어 순서. 섹션 전용 스타일은 여기에 넣지 마세요. */
+:root {
+  --blue: #0058a3;
+  --yellow: #ffdb00;
+  --ink: #111;
+  --paper: #f5f1e8;
+  --hub-bg: #06181c;
+  --navy: #0a2a6b;
+  --font: "Noto Sans KR", "Pretendard", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ease: cubic-bezier(.65, 0, .35, 1);
+
+  /* 레이어 (index.html 주석과 동일한 순서) */
+  --z-stage: 0;
+  --z-sections: 10;
+  --z-hub: 20;
+  --z-portal: 30;
+  --z-minimap: 40;
+  --z-overlays: 50;
+  --z-character: 60;
+  --z-hud: 70;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; }
+body {
+  font-family: var(--font);
+  color: var(--ink);
+  background: var(--hub-bg);
+  -webkit-font-smoothing: antialiased;
+  touch-action: none; /* 스크롤은 core/scroll.js 가 전담 */
+}
+img { display: block; max-width: 100%; }
+button { font: inherit; }
+h1, h2, h3, p, ul { margin: 0; padding: 0; }
+ul { list-style: none; }
+
+#stage { position: fixed; inset: 0; width: 100%; height: 100%; z-index: var(--z-stage); visibility: hidden; }
+#sections { position: fixed; inset: 0; z-index: var(--z-sections); pointer-events: none; }
+#overlays { position: fixed; inset: 0; z-index: var(--z-overlays); pointer-events: none; }
+#boot {
+  position: fixed; inset: 0; z-index: 99; display: grid; place-items: center;
+  background: var(--blue); color: #fff; font-weight: 700; letter-spacing: .04em;
+}
+
+/* ---------- 섹션 공통 ---------- */
+.sec { position: absolute; inset: 0; overflow: hidden; visibility: hidden; }
+.sec.is-active { visibility: visible; }
+#sections .sec.is-active { pointer-events: auto; }
+
+/* pinned 구간이 끝난 뒤 아래에서 올라오는 세로 콘텐츠 (BaseSection 이 자동으로 움직입니다) */
+.sec-scroll { position: absolute; left: 0; top: 0; width: 100%; padding-top: 100vh; will-change: transform; }
+
+.sec-error { position: absolute; left: 16px; top: 16px; padding: 8px 12px; background: #c00; color: #fff; font-size: 13px; z-index: 5; }
+
+/* ---------- 임시(placeholder) 표시용 유틸 ---------- */
+.eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; opacity: .6; }
+.ph-img { width: 100%; height: 100%; object-fit: cover; background: #ddd; }
+.ph-note { font-size: 12px; opacity: .55; }

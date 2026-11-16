@@ -1,0 +1,144 @@
+/* 공통 컴포넌트 스타일: 창문 허브 · 전환 포털 · 미니맵 · 캐릭터 · 블라인드 · HUD */
+
+/* ---------- 창문 허브 ---------- */
+#hub {
+  position: fixed; inset: 0; z-index: var(--z-hub);
+  background: var(--hub-bg); overflow: hidden; visibility: hidden;
+}
+#hub.is-on { visibility: visible; }
+
+.hub-track {
+  --win-w: min(34vh, 52vw);
+  --gap: max(18vw, 120px);
+  --i: 0;
+  position: absolute; top: 46%; /* windows.js 의 CENTER_Y 와 같아야 합니다 */
+  left: calc(50% - var(--win-w) / 2);
+  display: flex; gap: var(--gap);
+  transform: translate3d(calc(var(--i) * -1 * (var(--win-w) + var(--gap))), -50%, 0);
+  transition: transform .75s var(--ease);
+}
+.no-anim, .no-anim * { transition: none !important; }
+
+.win {
+  position: relative; flex: none; width: var(--win-w);
+  padding: 0; border: 0; background: none; color: #fff; cursor: pointer;
+  transform: scale(.8); opacity: .4;
+  transition: transform .75s var(--ease), opacity .75s var(--ease);
+}
+.win.is-focus { transform: none; opacity: 1; }
+.win:focus-visible { outline: 2px solid var(--yellow); outline-offset: 12px; border-radius: 40px; }
+
+/* 창문 프레임(임시 디자인). 디자인 확정 시 이 블록만 교체 */
+.win-frame {
+  display: block; aspect-ratio: 3 / 4.3;
+  padding: calc(var(--win-w) * .045);
+  border-radius: calc(var(--win-w) * .36);
+  background: linear-gradient(145deg, #c98e63, #6b4226 55%, #b9804f);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, .45), inset 0 0 0 2px rgba(255, 255, 255, .15);
+}
+.win-glass {
+  display: block; width: 100%; height: 100%; overflow: hidden;
+  border-radius: calc(var(--win-w) * .32);
+  background: var(--c);
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, .35);
+}
+.win-glass img { width: 100%; height: 100%; object-fit: cover; }
+
+.win-cap {
+  position: absolute; top: calc(100% + 20px); left: 50%; transform: translateX(-50%);
+  display: grid; gap: 2px; justify-items: center; white-space: nowrap;
+  opacity: 0; transition: opacity .4s;
+}
+.win.is-focus .win-cap { opacity: 1; }
+.win-cap b { font-size: 12px; letter-spacing: .2em; color: var(--yellow); }
+.win-cap strong { font-size: clamp(20px, 2.4vw, 30px); }
+.win-cap em { font-style: normal; font-size: 13px; opacity: .65; }
+
+/* ---------- 창문 전환 포털 ---------- */
+#portal {
+  position: fixed; z-index: var(--z-portal); overflow: hidden;
+  display: none; place-items: center; pointer-events: none;
+  container-type: size; /* 글자 크기가 포털 크기를 따라가도록 */
+}
+#portal.is-on { display: grid; }
+#portal img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.portal-text {
+  position: relative; color: #fff; font-weight: 800; line-height: 1;
+  font-size: 26cqw; letter-spacing: -.04em;
+  text-shadow: 0 4px 30px rgba(0, 0, 0, .25);
+}
+
+/* ---------- 미니맵 ---------- */
+#minimap {
+  position: fixed; z-index: var(--z-minimap);
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transition: opacity .3s, visibility .3s;
+}
+#minimap.is-on { opacity: 1; visibility: visible; }
+#minimap.is-corner {
+  pointer-events: auto; transform-origin: 100% 100%;
+  transition: opacity .3s, visibility .3s, transform .25s var(--ease);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+}
+#minimap.is-corner:hover { transform: scale(1.6); }
+
+.mm-svg { display: block; width: 100%; height: 100%; font-family: var(--font); }
+.mm-bg { fill: #fffbe6; stroke: var(--navy); stroke-width: 6; }
+.mm-walls path { fill: none; stroke: var(--navy); stroke-width: 2.5; stroke-linecap: square; opacity: .8; }
+.mm-route { fill: none; stroke: var(--navy); stroke-width: 2; stroke-dasharray: 5 5; }
+.mm-trail { fill: none; stroke: #e11d2a; stroke-width: 3.5; stroke-linecap: round; }
+.mm-tag { font-size: 9px; font-weight: 800; fill: var(--navy); text-anchor: middle; letter-spacing: .08em; }
+.mm-node { cursor: pointer; }
+.mm-node circle { fill: #fff; stroke: var(--navy); stroke-width: 2.5; transition: fill .2s; }
+.mm-node.is-visited circle { fill: var(--yellow); }
+.mm-node.is-current circle { fill: var(--blue); }
+.mm-node.is-current .mm-num { fill: #fff; }
+.mm-node:hover circle { stroke: #e11d2a; }
+.mm-num { font-size: 9px; font-weight: 800; fill: var(--navy); text-anchor: middle; pointer-events: none; }
+.mm-label { font-size: 10px; font-weight: 700; fill: var(--navy); text-anchor: middle; pointer-events: none; }
+.mm-here { fill: none; stroke: #e11d2a; stroke-width: 2; animation: mm-pulse 1.4s ease-out infinite; transform-box: fill-box; transform-origin: center; pointer-events: none; }
+@keyframes mm-pulse { from { transform: scale(1.6); opacity: 1; } to { transform: scale(4.2); opacity: 0; } }
+
+/* ---------- 캐릭터(조케) ---------- */
+#character { position: fixed; inset: 0; z-index: var(--z-character); pointer-events: none; }
+.joke {
+  position: absolute; left: 0; top: 0; width: clamp(40px, 5vw, 64px);
+  opacity: 0; transition: opacity .25s; will-change: transform;
+}
+.joke.is-on { opacity: 1; }
+.joke-body svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .25)); }
+.joke-arm-r { transform-box: fill-box; transform-origin: 0% 100%; }
+.joke.is-waving .joke-arm-r { animation: joke-wave .5s ease-in-out infinite alternate; }
+@keyframes joke-wave { from { transform: rotate(-14deg); } to { transform: rotate(22deg); } }
+.joke-say {
+  position: absolute; left: 70%; bottom: 96%; padding: 4px 10px; border-radius: 12px 12px 12px 2px;
+  background: #fff; color: var(--navy); font-weight: 800; font-size: 14px; white-space: nowrap;
+  opacity: 0; transform: translateY(6px); transition: opacity .2s, transform .2s;
+}
+.joke-say.is-on { opacity: 1; transform: none; }
+
+/* ---------- 블라인드 (인트로·아웃트로 공용, components/blinds.js) ---------- */
+.blinds { position: absolute; inset: 0; display: grid; grid-template-rows: repeat(var(--n), 1fr); perspective: 1400px; }
+.blind-slat {
+  background: var(--blue);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .18), inset 0 2px 0 rgba(255, 255, 255, .08);
+  transform-origin: 50% 50%; will-change: transform;
+}
+
+/* ---------- HUD ---------- */
+#hud { position: fixed; inset: 0; z-index: var(--z-hud); pointer-events: none; }
+.hud-hint {
+  position: absolute; left: 50%; bottom: 26px; transform: translate(-50%, 10px);
+  padding: 8px 16px; border-radius: 999px; overflow: hidden;
+  background: rgba(17, 17, 17, .78); color: #fff; font-size: 13px; white-space: nowrap;
+  opacity: 0; transition: opacity .25s, transform .25s;
+}
+.hud-hint.is-on { opacity: 1; transform: translate(-50%, 0); }
+.hud-gauge {
+  position: absolute; left: 0; bottom: 0; width: 100%; height: 3px;
+  background: var(--yellow); transform: scaleX(0); transform-origin: 0 50%;
+}
+.hud-debug {
+  position: absolute; left: 12px; top: 12px; margin: 0; padding: 8px 10px;
+  background: rgba(0, 0, 0, .7); color: #7CFC9A; font: 12px/1.5 ui-monospace, monospace; border-radius: 6px;
+}

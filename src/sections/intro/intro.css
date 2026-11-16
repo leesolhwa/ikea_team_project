@@ -1,0 +1,19 @@
+/* INTRO 전용 스타일 — 모든 선택자는 .sec-intro 로 시작합니다 */
+.sec-intro .intro-logo {
+  position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none;
+}
+.sec-intro .intro-logo img { width: min(46vw, 520px); }
+
+.sec-intro .intro-peek {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  display: flex; gap: 46px; opacity: 0;
+}
+.sec-intro .intro-peek i {
+  position: relative; width: 44px; height: 26px; border-radius: 50%;
+  background: #fff; box-shadow: inset 0 0 0 3px #0a2a6b;
+}
+.sec-intro .intro-peek i::after {
+  content: ""; position: absolute; left: 50%; top: 50%; width: 12px; height: 12px; margin: -6px;
+  border-radius: 50%; background: #0a2a6b;
+  transform: translate(var(--px, 0), var(--py, 0));
+}

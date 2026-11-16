@@ -1,0 +1,26 @@
+/* FOOD 전용 스타일 — 모든 선택자는 .sec-food 로 시작합니다 */
+.sec-food .food-hero { position: absolute; inset: 0; padding: 8vh 6vw; overflow: hidden; pointer-events: none; }
+.sec-food .food-title {
+  font-size: clamp(56px, 13vh, 170px); font-weight: 900; line-height: .86; letter-spacing: -.05em;
+  color: var(--blue); transform-origin: 0 0; will-change: transform;
+}
+
+.sec-food .food-cat {
+  padding: 12vh 8vw; background: #fafafa;
+  display: grid; grid-template-columns: minmax(180px, 1fr) 3fr; gap: 5vw; align-items: start;
+}
+.sec-food .food-cat:nth-child(even) { background: var(--paper); }
+.sec-food .food-cat h3 {
+  display: inline-block; margin-top: 10px; padding-bottom: 8px;
+  font-size: clamp(20px, 2.2vw, 30px); border-bottom: 4px solid var(--blue);
+}
+.sec-food .food-items { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.sec-food .food-items li { display: grid; gap: 8px; }
+.sec-food .food-items img { aspect-ratio: 1; border-radius: 50%; }
+.sec-food .food-price { justify-self: start; padding: 2px 8px; background: var(--yellow); font-weight: 800; }
+.sec-food .food-end { min-height: 40vh; grid-template-columns: 1fr; place-items: center; }
+
+@media (max-width: 760px) {
+  .sec-food .food-cat { grid-template-columns: 1fr; }
+  .sec-food .food-items { grid-template-columns: 1fr 1fr; }
+}

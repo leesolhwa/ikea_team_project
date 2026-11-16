@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e9e9e9"/><stop offset="1" stop-color="#cfcfcf"/></linearGradient></defs>
+  <rect width="800" height="600" fill="url(#g)"/>
+  <path d="M0 0 L800 600 M800 0 L0 600" stroke="#111" stroke-opacity=".12" stroke-width="2"/>
+  <text x="400.0" y="294.0" text-anchor="middle" font-family="system-ui, sans-serif" font-weight="800" font-size="51" fill="#111">About · 임시 3</text>
+  <text x="400.0" y="342.0" text-anchor="middle" font-family="system-ui, sans-serif" font-size="24" fill="#111" fill-opacity=".65">800×600 — 같은 파일명으로 교체</text>
+</svg>
