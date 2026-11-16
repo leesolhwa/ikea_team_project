@@ -1,0 +1,28 @@
+/* STORES 전용 스타일 — 모든 선택자는 .sec-stores 로 시작합니다 */
+.sec-stores .stores-head { position: absolute; left: 6vw; top: 10vh; display: grid; gap: 10px; pointer-events: none; }
+.sec-stores .stores-head h2 { font-size: clamp(32px, 5vw, 76px); font-weight: 800; line-height: .95; letter-spacing: -.02em; color: #8a857a; }
+.sec-stores .stores-head h2 em { font-style: normal; color: #7fa6c9; }
+
+.sec-stores .stores-tip {
+  position: absolute; left: 0; top: 0; width: 200px; padding: 10px; display: grid; gap: 6px;
+  background: #fff; border: 1px solid var(--ink); pointer-events: none; z-index: 2;
+}
+.sec-stores .stores-tip[hidden] { display: none; }
+.sec-stores .stores-tip img { aspect-ratio: 4 / 3; }
+
+.sec-stores .stores-family {
+  position: absolute; inset: 0; padding: 12vh 8vw; overflow: hidden;
+  display: grid; grid-template-columns: 1fr 1.2fr; grid-template-rows: auto auto 1fr; column-gap: 5vw; align-content: start;
+  background: var(--yellow); transform: translateY(100%); will-change: transform;
+}
+.sec-stores .stores-family h3 { font-size: clamp(64px, 11vw, 170px); font-weight: 800; letter-spacing: -.04em; line-height: 1; }
+.sec-stores .stores-family-sub { grid-column: 1; font-size: clamp(18px, 2.2vw, 30px); font-weight: 700; margin-top: 12px; }
+.sec-stores .stores-family ul { grid-column: 2; grid-row: 1 / 4; align-self: end; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.sec-stores .stores-family li { display: grid; gap: 8px; padding-bottom: 14px; background: #fff; }
+.sec-stores .stores-family li img { aspect-ratio: 4 / 3; }
+.sec-stores .stores-family li strong, .sec-stores .stores-family li span { padding: 0 14px; }
+
+@media (max-width: 760px) {
+  .sec-stores .stores-family { grid-template-columns: 1fr; }
+  .sec-stores .stores-family ul { grid-column: 1; grid-row: auto; margin-top: 24px; }
+}

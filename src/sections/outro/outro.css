@@ -1,0 +1,14 @@
+/* OUTRO 전용 스타일 — 모든 선택자는 .sec-outro 로 시작합니다 */
+.sec-outro .outro-logo {
+  position: absolute; inset: 0 0 24vh; display: grid; place-items: center; opacity: 0; pointer-events: none;
+}
+.sec-outro .outro-logo img { width: min(46vw, 520px); }
+
+.sec-outro .outro-strip {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 30vh;
+  display: flex; align-items: center; justify-content: flex-end; gap: 4vw;
+  padding: 0 5vw 0 22vw;
+  background: #fff; transform: translateY(100%);
+}
+.sec-outro .outro-route { height: 80%; aspect-ratio: 400 / 260; }
+.sec-outro .outro-bye { font-size: clamp(32px, 6vw, 84px); font-weight: 800; letter-spacing: -.04em; color: var(--blue); }

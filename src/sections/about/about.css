@@ -1,0 +1,42 @@
+/* ABOUT 전용 스타일 — 모든 선택자는 .sec-about 로 시작합니다 */
+.sec-about .about-hej {
+  position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none;
+}
+.sec-about .about-hej span {
+  color: #fff; font-weight: 800; line-height: 1; letter-spacing: -.04em;
+  font-size: clamp(60px, 12vw, 180px);
+  transform-origin: 52% 58%; /* 확대 시 글자가 선명하도록 will-change 는 쓰지 않습니다 */
+}
+.sec-about .about-white { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+
+.sec-about .sec-scroll { color: var(--ink); }
+.sec-about .about-block {
+  min-height: 100vh; padding: 14vh 8vw; background: #fff;
+  display: flex; flex-direction: column; justify-content: center; gap: 28px;
+}
+.sec-about .about-vision { align-items: center; text-align: center; }
+.sec-about .about-vision h2 { font-size: clamp(28px, 4.6vw, 68px); font-weight: 500; letter-spacing: -.03em; line-height: 1.05; }
+
+.sec-about .about-design { background: var(--paper); }
+.sec-about .about-cards { display: grid; grid-template-columns: repeat(5, 1fr); border: 1px solid rgba(0, 0, 0, .15); }
+.sec-about .about-cards li { display: grid; gap: 8px; padding: 24px 18px; border-right: 1px solid rgba(0, 0, 0, .15); }
+.sec-about .about-cards li:last-child { border-right: 0; }
+.sec-about .about-card-fig {
+  display: grid; place-items: center; aspect-ratio: 1; margin-bottom: 12px;
+  border: 1px dashed rgba(0, 0, 0, .3); font-size: 12px; opacity: .6;
+}
+.sec-about .about-cards strong { font-size: 15px; text-transform: uppercase; }
+.sec-about .about-cards em { font-style: normal; font-size: 13px; opacity: .7; }
+
+.sec-about .about-rows { display: grid; gap: 6vh; }
+.sec-about .about-rows li { display: grid; grid-template-columns: 1fr 1fr; gap: 4vw; align-items: center; }
+.sec-about .about-rows li:nth-child(even) img { order: 2; }
+.sec-about .about-rows img { aspect-ratio: 4 / 3; }
+.sec-about .about-rows h3 { font-size: 24px; color: var(--navy); margin-bottom: 8px; }
+
+.sec-about .about-end { min-height: 50vh; align-items: center; }
+
+@media (max-width: 760px) {
+  .sec-about .about-cards { grid-template-columns: 1fr 1fr; }
+  .sec-about .about-rows li { grid-template-columns: 1fr; }
+}
