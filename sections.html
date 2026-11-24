@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IKEA 포트폴리오 — 공통 뼈대</title>
+
+  <!-- 공통 스타일만 여기서 불러옵니다. 섹션 CSS는 각 섹션 JS가 스스로 로드합니다. -->
+  <link rel="stylesheet" href="src/styles/base.css" />
+  <link rel="stylesheet" href="src/styles/common.css" />
+
+  <!-- 빌드 도구 없이 Three.js 사용 (버전 고정). Vite로 옮길 때는 이 블록을 지우고 npm i three -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <!-- 레이어 순서(아래→위): 3D 캔버스 < 섹션 DOM < 창문 허브 < 전환 포털 < 미니맵 < 인트로/아웃트로 < 캐릭터 < HUD -->
+  <canvas id="stage" aria-hidden="true"></canvas>
+  <main id="sections"></main>
+  <div id="hub"></div>
+  <div id="portal" aria-hidden="true"></div>
+  <div id="minimap"></div>
+  <div id="overlays"></div>
+  <div id="character" aria-hidden="true"></div>
+  <div id="hud"></div>
+  <div id="boot">불러오는 중…</div>
+
+  <!-- 헤더·푸터는 이번 단계에서 생략 -->
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

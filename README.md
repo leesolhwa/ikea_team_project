@@ -1,4 +1,19 @@
-# IKEA 포트폴리오 — 공통 뼈대
+# IKEA 포트폴리오 공통 뼈대
+
+기본 화면은 Room Atlas입니다. 스크롤 한 번에 다음 방문까지 이동하고 방문이나 제목을 클릭하면 해당 상세페이지가 열립니다. 방 순서는 About → IKEA PS → 3D room → Store & Family → Restaurant → 출구입니다.
+
+## 실행과 수정
+
+- 프로젝트 폴더에서 `npm run dev`를 실행하고 `http://localhost:5173/`을 엽니다. 메인 데모는 `index.html`을 브라우저로 바로 열어도 동작합니다.
+- 방과 가구 배치는 `src/core/atlas/scene.js`, 렌더링과 호버 처리는 `src/core/atlas/render.js`, 이동 경로와 상세페이지 콘텐츠는 `src/core/atlas/app.js`에서 수정합니다.
+- 페이지 구조는 `index.html`, 테마와 전환 스타일은 `src/styles/atlas.css`에서 수정합니다.
+- 상세페이지 바로가기는 `#about`, `#ikea-ps`, `#3d-room`, `#store-family`, `#restaurant`입니다.
+
+## 팀 섹션 개발
+
+기존 `src/sections/` 작업은 로컬 서버의 `sections.html`에서 실행합니다. 팀에서 사용하던 `/?section=rooms&debug` 등의 주소도 이 개발 화면으로 연결됩니다. 메인의 상세페이지 콘텐츠는 현재 Room Atlas 데모 버전입니다.
+
+## 섹션 개발 화면 안내
 
 스토리보드 기준으로 **전체 이동 흐름만 먼저 연결한 뼈대**입니다.
 화면에 보이는 것은 전부 임시 이미지와 단순 3D 도형이며, 각자 자기 섹션 폴더 안에서 디자인과 GLB 모델로 교체하면 됩니다.
@@ -8,7 +23,7 @@
 
 ES 모듈을 쓰기 때문에 `index.html`을 더블클릭하면 열리지 않습니다. 로컬 서버로 여세요.
 
-- VS Code **Live Server** 확장 → `index.html`에서 "Go Live"
+- VS Code **Live Server** 확장 → `sections.html`에서 "Go Live"
 - 또는 터미널에서 `npm run dev` (= `npx serve`) / `python3 -m http.server 5173`
 
 Three.js(0.170.0)는 `index.html`의 import map으로 CDN에서 불러오므로 설치할 것이 없습니다(인터넷 연결 필요).
@@ -40,7 +55,7 @@ intro ─▶ 창문 허브 [About] ⇄ [Rooms] ⇄ [Stores] ⇄ [Food] ─▶ ou
 ## 폴더 구조와 담당
 
 ```
-index.html              레이어 뼈대 + Three.js import map
+sections.html           레이어 뼈대 + Three.js import map
 src/
   main.js               진입점 (수정할 일 거의 없음)
   config.js             스크롤 감도·전환 시간 등 전역 값
