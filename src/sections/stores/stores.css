@@ -58,14 +58,12 @@
 
 /* ---------- 매장 카드 ---------- */
 .sec-stores .sf-card {
-  position: absolute; z-index: 4; left: calc(560 * var(--u)); top: calc(554 * var(--v)); width: calc(467 * var(--u));
-  min-width: 260px; display: grid; gap: calc(28 * var(--f)); justify-items: start;
-  background: var(--ivory); padding: calc(18 * var(--f)) calc(22 * var(--f)) calc(22 * var(--f)); margin: calc(-18 * var(--f)) 0 0 calc(-22 * var(--f));
-  opacity: 0; transform: translateY(12px); transition: opacity .35s, transform .35s; pointer-events: none;
+  position: absolute; z-index: 4; left: 0; top: 0; width: max-content; max-width: min(420px, 60vw);
+  display: grid; gap: 14px; justify-items: start;
+  opacity: 0; transform: translateY(6px); transition: opacity .25s, transform .25s; pointer-events: none;
 }
 .sec-stores .sf-card.is-on { opacity: 1; transform: none; pointer-events: auto; }
-.sec-stores .sf-card a { background: var(--ivory); }
-.sec-stores .sf-card h3 { margin: 0; font: 600 max(20px, calc(28 * var(--f))) / 1.2 var(--sans); letter-spacing: -0.05em; }
+.sec-stores .sf-card h3 { margin: 0; font: 600 max(18px, calc(24 * var(--f))) / 1.2 var(--sans); letter-spacing: -0.05em; }
 .sec-stores .sf-card p { margin: 8px 0 0; font: 400 max(14px, calc(16 * var(--f))) / 1.4 var(--sans); letter-spacing: -0.05em; }
 .sec-stores .sf-card a {
   display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border: 1px solid var(--navy);

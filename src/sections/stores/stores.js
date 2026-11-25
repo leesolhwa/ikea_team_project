@@ -179,14 +179,17 @@ export class StoresSection extends BaseSection {
     // 평면 지도 핀: 마우스 = 카드, 클릭 = 매장 정보 패널로
     this.dom.pins.forEach((b) => {
       const store = byId(b.dataset.id);
-      const show = () => { this.pickStore(store); this.hovering = true; };
-      const hide = () => { this.hovering = false; };
+      const show = () => { clearTimeout(this.hideT); this.pickStore(store); this.hovering = true; this.placeCard(b); };
+      const hide = () => this.hideCard();
       b.addEventListener('pointerenter', show);
       b.addEventListener('focus', show);
       b.addEventListener('pointerleave', hide);
       b.addEventListener('blur', hide);
       b.addEventListener('click', (e) => { e.stopPropagation(); this.pickStore(store); this.ctx.scroll.scrollTo(GO.info); });
     });
+    // 카드 위로 마우스를 옮겨도 유지 (VIEW MORE 를 누를 수 있게)
+    this.dom.card.addEventListener('pointerenter', () => clearTimeout(this.hideT));
+    this.dom.card.addEventListener('pointerleave', () => this.hideCard());
     this.dom.panelEls.forEach((a) => {
       a.addEventListener('click', (e) => e.stopPropagation());
       a.addEventListener('pointerenter', () => this.pickStore(byId(a.dataset.id)));
@@ -296,8 +299,28 @@ export class StoresSection extends BaseSection {
     d.panelEls.forEach((a) => a.classList.toggle('is-sel', a.dataset.id === s.id));
   }
 
+  hideCard() {
+    clearTimeout(this.hideT);
+    this.hideT = setTimeout(() => { this.hovering = false; }, 220);
+  }
+
+  /** 매장 카드를 핀 옆에 띄움 (오른쪽에 자리가 없으면 왼쪽) */
+  placeCard(pinEl) {
+    const host = this.el.getBoundingClientRect();
+    const r = pinEl.getBoundingClientRect();
+    const card = this.dom.card;
+    const w = card.offsetWidth || 320;
+    let x = r.right - host.left + 22;
+    if (x + w > host.width - 24) x = r.left - host.left - 22 - w;
+    card.style.left = `${Math.max(16, x)}px`;
+    card.style.top = `${r.top - host.top - 6}px`;
+  }
+
   /** 패널 이미지는 object-fit: cover 로 잘리므로, 핀 기둥 길이를 실제 보이는 크기에 맞춤 (매장 = 이미지 정가운데) */
   layoutPanels() {
+    // 카드 위로 마우스를 옮겨도 유지 (VIEW MORE 를 누를 수 있게)
+    this.dom.card.addEventListener('pointerenter', () => clearTimeout(this.hideT));
+    this.dom.card.addEventListener('pointerleave', () => this.hideCard());
     this.dom.panelEls.forEach((a) => {
       const box = a.querySelector('.img');
       const { width: w, height: h } = box.getBoundingClientRect();
@@ -308,6 +331,8 @@ export class StoresSection extends BaseSection {
 
   leave() {
     this.el.style.cursor = '';
+    clearTimeout(this.hideT);
+    this.hovering = false;
   }
 
   resize(w, h) {
