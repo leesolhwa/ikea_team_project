@@ -228,7 +228,7 @@ export class StoresSection extends BaseSection {
     };
     this.globeCenter = { value: new THREE.Vector3() };
     this.dotMat = mat(0.065);
-    this.storeDotMat = mat(0.15); // 매장 점은 망점보다 크게
+    this.storeDotMat = mat(0.065); // 매장 점 = 망점과 같은 크기
     this.buildDots();
   }
 
@@ -303,10 +303,10 @@ export class StoresSection extends BaseSection {
     const r = pinEl.getBoundingClientRect();
     const card = this.dom.card;
     const w = card.offsetWidth || 320;
-    let x = r.right - host.left + 22;
-    if (x + w > host.width - 24) x = r.left - host.left - 22 - w;
+    let x = r.right - host.left + 14;
+    if (x + w > host.width - 24) x = r.left - host.left - 14 - w;
     card.style.left = `${Math.max(16, x)}px`;
-    card.style.top = `${r.top - host.top - 6}px`;
+    card.style.top = `${r.top + r.height / 2 - host.top - 10}px`; // 매장 이름 첫 줄이 점과 같은 높이
   }
 
   leave() {
@@ -329,6 +329,7 @@ export class StoresSection extends BaseSection {
       transformOrigin: `${(MAP.cx / MAP.w) * 100}% ${(MAP.cy / MAP.h) * 100}%`,
     });
     this.mapAt = { k, cx, cy };
+    this.dom.map.style.setProperty('--dot', `${(2.6 * 2 * k).toFixed(2)}px`); // 지도 망점 지름과 같게
   }
 
   /* ---------------- 매 프레임 ---------------- */
@@ -419,7 +420,7 @@ export class StoresSection extends BaseSection {
     // 확대하는 동안 점이 커다랗게 번지지 않게: 화면에서 점 크기를 거의 그대로 (조금씩만 커짐)
     const grow2 = Math.pow((camD - R) / (this.D0 * 0.86 - R), 0.6);
     this.dotMat.size = 0.065 * Math.min(1, grow2);
-    this.storeDotMat.size = 0.15 * Math.min(1, grow2);
+    this.storeDotMat.size = 0.065 * Math.min(1, grow2);
 
     this.camera.position.set(0, 0, camD);
     this.camera.lookAt(0, 0, 0);
