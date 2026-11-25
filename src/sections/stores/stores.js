@@ -2,7 +2,7 @@
 //
 // 스크롤 흐름 (구간 값은 아래 T 에서 한 번에 조정)
 //  1. 타이틀      STORE WORLDWIDE → 글자가 벌어지며 선 지구본(원 + 세로 타원)
-//  2. 지구본      유럽 정면, 세계 이케아 매장마다 지구본에 꽂힌 압정 핀, 제자리 자전 (지구본 클릭 = 바로 한반도로)
+//  2. 지구본      유럽 정면, 세계 이케아 매장 핀이 지구본에 꽂힘, 제자리 자전 (지구본 클릭 = 바로 한반도로)
 //  3. 전환        한반도를 정면으로 돌린 뒤, 그 자리에서 원이 퍼지며 지구본과 같은 스타일의 한반도 지도가 열림
 //  4. 평면 지도    서울 핀 하나 → 지도가 연해지고 전체 핀·매장 카드 (핀에 마우스 = 카드, 클릭 = 그 매장 정보로)
 //  5. 매장 정보    왼쪽 = 정규 매장 / 팝업 매장 목록, 오른쪽 = 고른 매장 동네 3D (OpenStreetMap 건물)
@@ -50,7 +50,7 @@ const KOREA = { lat: 36.5, lon: 127.8 };
 const EUROPE = { lat: 44, lon: 16 };   // 시안 3번 화면에서 정면에 보이는 곳
 const FIRST = 'gangdong';              // 시안 4번 화면: 서울에 핀 하나
 const DEFAULT = 'pangyo';              // 시안 5번 화면: 처음 보이는 매장 카드
-const C = { ivory: '#fcfaf6', line: '#d2cdc6', blue: '#0c3494', yellow: '#ffc800', bld: '#fbfaf6', needle: '#b9b6b0' };
+const C = { ivory: '#fcfaf6', line: '#d2cdc6', blue: '#0c3494', yellow: '#ffc800', bld: '#fbfaf6' };
 const CITY = { dist: 2300, polar: 55, az: 10, pin: 260 };   // 동네 3D 카메라 (m, 도) · 핀 높이(m)
 // 목록 순서 = 스크롤 순서: 정규 매장 먼저, 그다음 팝업 매장
 const GROUPS = [
@@ -82,15 +82,6 @@ function yawFor(lat, lon) {
 const byId = (id) => STORES.find((s) => s.id === id);
 const shortName = (s) => s.name.replace(/^이케아 (팝업 )?/, '');
 
-/** 압정 핀 한 개 (은색 바늘 + 동그란 머리). 바늘 끝 = 원점, 위쪽(+Y)으로 섬 */
-function pushpinGeometries(len, head, needle) {
-  const n = new THREE.CylinderGeometry(needle, needle * 0.25, len, 6, 1, true);
-  n.translate(0, len / 2, 0);
-  const h = new THREE.SphereGeometry(head, 16, 12);
-  h.translate(0, len + head * 0.75, 0);
-  return { needle: n, head: h };
-}
-
 export class StoresSection extends BaseSection {
   static meta = {
     id: 'stores',
@@ -120,7 +111,7 @@ export class StoresSection extends BaseSection {
     }).join('');
     const list = FAMILY.map((w) => `<li>${w}</li>`).join('');
     return /* html */ `
-      <div class="sf-city" aria-hidden="true"><div class="sf-citylabels"></div><i class="sf-veil"></i></div>
+      <div class="sf-city" aria-hidden="true"><div class="sf-citylabels"></div><span class="sf-citypin"></span><i class="sf-veil"></i></div>
 
       <div class="sf-reveal">
         <figure class="sf-map" aria-label="이케아 국내 매장 지도">
@@ -178,7 +169,7 @@ export class StoresSection extends BaseSection {
       v1: this.$('.sf-vl.v1'), v2: this.$('.sf-vl.v2'), v3: this.$('.sf-vl.v3'), mid: this.$('.sf-h.mid'),
       bar: this.$('.sf-bar'), nav: this.$('.sf-nav'), grid: this.$('.sf-grid'), navBtns: this.$$('.sf-nav button'),
       reveal: this.$('.sf-reveal'), map: this.$('.sf-map'), mapImg: this.$('.sf-map img'), pins: this.$$('.sf-pin'),
-      city: this.$('.sf-city'), cityLabels: this.$('.sf-citylabels'), veil: this.$('.sf-veil'),
+      city: this.$('.sf-city'), cityLabels: this.$('.sf-citylabels'), cityPin: this.$('.sf-citypin'), veil: this.$('.sf-veil'),
       info: this.$('.sf-info'), items: this.$$('.sf-stores button'),
       kind: this.$('.sf-detail .kind'), name: this.$('.sf-detail h3'), addr: this.$('.sf-detail p'), link: this.$('.sf-detail a'),
       card: this.$('.sf-card'), cardName: this.$('.sf-card h3'), cardAddr: this.$('.sf-card p'), cardLink: this.$('.sf-card a'),
@@ -264,27 +255,46 @@ export class StoresSection extends BaseSection {
     rim.renderOrder = oval.renderOrder = 3;
     this.face.add(rim, oval);
 
-    // 매장 핀: 지구본에 꽂힌 압정 (은색 바늘 + 동그란 머리, 조명을 받아 입체로 보임)
+    // 매장 핀 (cheesedesign 핀): 동그란 머리 + 연한 빛 테두리 + 아래로 흐려지는 가는 기둥
     const list = [
       ...WORLD.map(([lat, lon]) => ({ lat, lon, color: C.blue })),
       ...STORES.map((s) => ({ lat: s.lat, lon: s.lon, color: s.type === 'popup' ? C.yellow : C.blue })),
     ];
-    const g = pushpinGeometries(R * 0.06, R * 0.009, R * 0.0016);
-    this.needleMat = new THREE.MeshStandardMaterial({ color: C.needle, metalness: 0.6, roughness: 0.35, transparent: true, opacity: 0 });
-    this.headMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.32, metalness: 0, transparent: true, opacity: 0 });
-    const needles = new THREE.InstancedMesh(g.needle, this.needleMat, list.length);
-    const heads = new THREE.InstancedMesh(g.head, this.headMat, list.length);
-    const m = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), one = new THREE.Vector3(1, 1, 1), col = new THREE.Color();
-    list.forEach((d, i) => {
-      const n = latLonToVec3(d.lat, d.lon, 1);
-      q.setFromUnitVectors(up, n);
-      m.compose(n.clone().multiplyScalar(R * 0.995), q, one);
-      needles.setMatrixAt(i, m);
-      heads.setMatrixAt(i, m);
-      heads.setColorAt(i, col.set(d.color));
+    const stem = [], stemCol = [], heads = [], colors = [];
+    const col = new THREE.Color();
+    for (const d of list) {
+      const a = latLonToVec3(d.lat, d.lon, R), b = latLonToVec3(d.lat, d.lon, R * 1.05);
+      stem.push(a.x, a.y, a.z, b.x, b.y, b.z);
+      col.set(d.color);
+      stemCol.push(col.r, col.g, col.b, 0, col.r, col.g, col.b, 1); // 땅 쪽은 투명
+      heads.push(b.x, b.y, b.z);
+      colors.push(col.r, col.g, col.b);
+    }
+    const stemGeo = new THREE.BufferGeometry();
+    stemGeo.setAttribute('position', new THREE.Float32BufferAttribute(stem, 3));
+    stemGeo.setAttribute('color', new THREE.Float32BufferAttribute(stemCol, 4));
+    this.stemMat = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0, depthWrite: false });
+    // 머리 텍스처: 꽉 찬 원 + 바깥 연한 테두리 (흰색이라 핀 색과 곱해짐)
+    const dot = document.createElement('canvas');
+    dot.width = dot.height = 128;
+    const g = dot.getContext('2d');
+    const halo = g.createRadialGradient(64, 64, 30, 64, 64, 62);
+    halo.addColorStop(0, 'rgba(255,255,255,.38)');
+    halo.addColorStop(0.55, 'rgba(255,255,255,.22)');
+    halo.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = halo;
+    g.fillRect(0, 0, 128, 128);
+    g.fillStyle = '#fff';
+    g.beginPath(); g.arc(64, 64, 34, 0, Math.PI * 2); g.fill();
+    const headGeo = new THREE.BufferGeometry();
+    headGeo.setAttribute('position', new THREE.Float32BufferAttribute(heads, 3));
+    headGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    this.headMat = new THREE.PointsMaterial({
+      size: 0.16, sizeAttenuation: true, map: new THREE.CanvasTexture(dot), vertexColors: true,
+      transparent: true, opacity: 0, depthWrite: false, alphaTest: 0.01,
     });
     this.pins = new THREE.Group();
-    this.pins.add(needles, heads);
+    this.pins.add(new THREE.LineSegments(stemGeo, this.stemMat), new THREE.Points(headGeo, this.headMat));
     this.globe.add(this.pins);
   }
 
@@ -296,15 +306,6 @@ export class StoresSection extends BaseSection {
     this.cityHolder = new THREE.Group();
     this.cityRoot.add(this.cityHolder);
     this.bldMat = new THREE.MeshLambertMaterial({ color: C.bld });
-    // 매장 자리에 꽂힌 큰 압정
-    const g = pushpinGeometries(CITY.pin, 30, 3.2);
-    this.cityPinHead = new THREE.MeshStandardMaterial({ color: C.blue, roughness: 0.32 });
-    const pin = new THREE.Group();
-    pin.add(
-      new THREE.Mesh(g.needle, new THREE.MeshStandardMaterial({ color: C.needle, metalness: 0.6, roughness: 0.35 })),
-      new THREE.Mesh(g.head, this.cityPinHead),
-    );
-    this.cityRoot.add(pin);
   }
 
   pickStore(s) {
@@ -323,7 +324,7 @@ export class StoresSection extends BaseSection {
       b.classList.toggle('is-on', on);
       if (on) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current');
     });
-    this.cityPinHead.color.set(popup ? C.yellow : C.blue);
+    d.cityPin.classList.toggle('is-popup', popup);
     this.showCity(s.id);
   }
 
@@ -477,7 +478,8 @@ export class StoresSection extends BaseSection {
     this.ovalMat.opacity = wire * (1 - grow);
     // 핀이 지구본 안쪽에서 쑥 꽂혀 나옴
     const pinsUp = ease.out(seg(pin, T.grow[0] + 0.03, T.grow[1]));
-    this.needleMat.opacity = this.headMat.opacity = pinsUp;
+    this.headMat.opacity = pinsUp;
+    this.stemMat.opacity = 0.9 * pinsUp;
     this.pins.visible = pinsUp > 0;
     this.pins.scale.setScalar(lerp(0.95, 1, pinsUp));
 
@@ -540,6 +542,12 @@ export class StoresSection extends BaseSection {
     if (infoOn && this.cityStations) {
       this.cityRoot.updateMatrixWorld(true);
       const v = new THREE.Vector3();
+      // 매장 핀 (화면 위 DOM 으로 그림: 머리 = 핀 높이, 기둥 끝 = 매장 위치)
+      const toScreen = (y) => { v.set(0, y, 0).project(this.camera); return [(v.x * 0.5 + 0.5) * this.vw, (-v.y * 0.5 + 0.5) * this.vh]; };
+      const [, gy] = toScreen(0);
+      const [hx, hy] = toScreen(CITY.pin);
+      d.cityPin.style.transform = `translate(${hx}px, ${hy}px)`;
+      d.cityPin.style.height = `${Math.max(0, gy - hy)}px`;
       [...d.cityLabels.children].forEach((el) => {
         const [, x, y] = this.cityStations[+el.dataset.i];
         v.set(x, 0, y).project(this.camera);
