@@ -397,3 +397,21 @@
   background: #e6e3dd;
   pointer-events: none;
 }
+
+.cursor-filter { position: fixed; pointer-events: none; }
+#photo-cursor {
+  position: fixed; z-index: 10; pointer-events: none;
+  width: min(5.20833vw,10.101vh); aspect-ratio: 1; border-radius: 50%;
+  transform: translate(-50%,-50%);
+  background: url("../../../assets/images/collection/mouse-ellipse.svg") center/contain no-repeat;
+  color: white; font: 800 min(.83333vw,1.61616vh)/1 Inter,Arial,sans-serif;
+}
+#photo-cursor::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  backdrop-filter: url(#cursor-yellow-match);
+}
+#photo-cursor span { position: absolute; top: 0; left: 28.5%; transform: translateX(-50%); text-align: center; }
+@supports (backdrop-filter: url(#cursor-yellow-match)) {
+  #photo-cursor { background: transparent; }
+}
+body.photo-hover, body.photo-hover .photo-mask * { cursor: none !important; }

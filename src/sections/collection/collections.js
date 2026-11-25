@@ -242,3 +242,26 @@ function playOpeningCards() {
 onresize = move;
 displayFrame(0, false, true);
 playOpeningCards();
+
+const photoCursor = document.getElementById("photo-cursor");
+function hidePhotoCursor() {
+  photoCursor.hidden = true;
+  document.body.classList.remove("photo-hover");
+}
+function updatePhotoCursor(event) {
+  if (event.pointerType !== "mouse" || detail || !event.target.closest(".photo-mask")) {
+    hidePhotoCursor();
+    return;
+  }
+  photoCursor.style.left = event.clientX + "px";
+  photoCursor.style.top = event.clientY + "px";
+  photoCursor.hidden = false;
+  document.body.classList.add("photo-hover");
+}
+document.addEventListener("pointermove", updatePhotoCursor);
+document.addEventListener("pointerout", event => { if (!event.relatedTarget) hidePhotoCursor(); });
+window.addEventListener("blur", hidePhotoCursor);
+stage.addEventListener("click", event => {
+  if (!detail && event.target.closest(".photo-mask")) show(current, true);
+  hidePhotoCursor();
+});
