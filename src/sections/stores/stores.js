@@ -229,8 +229,8 @@ export class StoresSection extends BaseSection {
     };
     this.globeCenter = { value: new THREE.Vector3() };
     // 점 크기는 화면 px (모든 점 같은 크기, 매장 점도 같은 크기)
-    this.dotMat = mat(2);
-    this.storeDotMat = mat(2);
+    this.dotMat = mat(3);
+    this.storeDotMat = mat(3);
     this.koreaMat = mat(1); // 확대할 때 나타나는 한반도 망점 (지도 이미지와 같은 점)
     this.buildDots();
     this.buildKoreaDots();
@@ -449,7 +449,7 @@ export class StoresSection extends BaseSection {
     this.storeDotMat.opacity = pinsUp * worldFade;
     // 점 크기 (화면 px): 세계 망점은 확대하며 조금 커지고, 한반도 망점은 확대 비율 그대로 커져 끝에서 지도 점과 같아짐
     const zoomNow = this.vh / 2 / ((camD - R * s) * t) / endPx;   // 확대 끝 대비 지금 배율
-    this.dotMat.size = this.storeDotMat.size = 2 * (1 + reveal * 0.8);
+    this.dotMat.size = this.storeDotMat.size = 3 * (1 + reveal * 0.6);
     this.koreaMat.size = Math.max(0.6, 1.5 * 2 * mk * zoomNow);
 
     this.camera.position.set(0, 0, camD);
