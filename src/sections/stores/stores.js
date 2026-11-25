@@ -1,13 +1,13 @@
-// STORE & FAMILY — 피그마 시안(S&F_store, S&F_family) + cheesedesign 식 3D 매장 지도
+// STORE & FAMILY — 피그마 시안(S&F_store, S&F_family)
 //
 // 스크롤 흐름 (구간 값은 아래 T 에서 한 번에 조정)
 //  1. 타이틀      STORE WORLDWIDE → 글자가 벌어지며 선 지구본(원 + 세로 타원)
-//  2. 지구본      유럽 정면, 세계 이케아 매장이 반투명 핀으로 솟음, 제자리 자전 (지구본 클릭 = 바로 한반도로)
+//  2. 지구본      유럽 정면, 세계 이케아 매장마다 지구본에 꽂힌 압정 핀, 제자리 자전 (지구본 클릭 = 바로 한반도로)
 //  3. 전환        한반도를 정면으로 돌린 뒤, 그 자리에서 원이 퍼지며 지구본과 같은 스타일의 한반도 지도가 열림
-//  4. 평면 지도    서울 핀 하나 → 지도가 연해지고 전체 핀·매장 카드 (핀에 마우스 = 카드, 클릭 = 3D 로 이동)
-//  5. 동네 3D     지도가 사라지고 고른 매장 동네가 3D 로 솟아 천천히 돎 (OpenStreetMap 건물)
-//  6. 매장 패널    수도권·지방 매장 동네 패널이 올라옴 (클릭 = 그 매장 3D 로)
-//  7. FAMILY      시안 FAMILY 화면, 오른쪽 단어 목록이 위로 흐름 (santalarch 방식)
+//  4. 평면 지도    서울 핀 하나 → 지도가 연해지고 전체 핀·매장 카드 (핀에 마우스 = 카드, 클릭 = 그 매장 정보로)
+//  5. 매장 정보    왼쪽 = 정규 매장 / 팝업 매장 목록, 오른쪽 = 고른 매장 동네 3D (OpenStreetMap 건물)
+//                 스크롤하면 목록 순서대로 매장이 넘어감, 목록을 누르면 그 매장으로 이동
+//  6. FAMILY      시안 FAMILY 화면, 오른쪽 단어 목록이 위로 흐름 (santalarch 방식)
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { BaseSection } from '../../core/BaseSection.js';
@@ -20,21 +20,22 @@ const FILES = {
   land: 'assets/images/stores/globe-land.png',     // 지구본 대륙 텍스처 (Natural Earth)
   korea: 'assets/images/stores/korea-map.png',     // 한반도 지도 (지구본 스타일, Natural Earth · 통계청 시도 경계)
   family: 'assets/images/stores/family-billy.jpg', // 시안 FAMILY 사진
-  panel: (id) => `assets/images/stores/panels/${id}.jpg`, // 매장 동네 패널 (OSM 건물을 미리 렌더링)
   city: new URL('./data/city.json', import.meta.url).href, // 매장 동네 건물 (© OpenStreetMap)
 };
 
 /** 스크롤 구간 (pin 0~1) */
 const T = {
   wire: [0.02, 0.08], grow: [0.08, 0.16], spin: [0.16, 0.24], turn: [0.24, 0.33], reveal: [0.33, 0.41],
-  first: [0.39, 0.43], dim: [0.45, 0.5], map: [0.48, 0.58],   // map = 평면 지도에서 핀을 고를 수 있는 구간
-  city: [0.56, 0.62], orbit: [0.62, 0.7], panels: [0.68, 0.74], family: [0.8, 0.87], list: [0.87, 0.99],
+  first: [0.39, 0.43], dim: [0.45, 0.5], map: [0.48, 0.56],   // map = 평면 지도에서 핀을 고를 수 있는 구간
+  info: [0.55, 0.6],      // 매장 정보 화면이 열림
+  steps: [0.6, 0.8],      // 이 구간에서 매장이 목록 순서대로 넘어감
+  family: [0.82, 0.88], list: [0.88, 0.99],
 };
-const GO = { location: 0.18, city: 0.65, panels: 0.76, family: 0.87 }; // 메뉴·클릭으로 이동할 위치
+const GO = { location: 0.18, info: 0.6, family: 0.88 }; // 메뉴로 이동할 위치
 
-// 한반도 지도 이미지 (지구본과 같은 정사영·같은 색, 2200 × 1300 시안 px, 2배 해상도)
-// 중심 (127.8°E, 36.5°N) = (1100, 650), 중심에서 경도 1도 = 150px
-const MAP = { w: 2200, h: 1300, cx: 1100, cy: 650, lat0: 36.5, lon0: 127.8, r: 10691.4 };
+// 한반도 지도 이미지 (지구본과 같은 정사영·같은 색, 3000 × 1400 시안 px, 2배 해상도)
+// 중심 (127.8°E, 36.5°N) = (1500, 700), 중심에서 경도 1도 = 150px
+const MAP = { w: 3000, h: 1400, cx: 1500, cy: 700, lat0: 36.5, lon0: 127.8, r: 10691.4 };
 function mapXY(lat, lon) {
   const p = THREE.MathUtils.degToRad(lat), l = THREE.MathUtils.degToRad(lon - MAP.lon0), p0 = THREE.MathUtils.degToRad(MAP.lat0);
   return [
@@ -49,13 +50,15 @@ const KOREA = { lat: 36.5, lon: 127.8 };
 const EUROPE = { lat: 44, lon: 16 };   // 시안 3번 화면에서 정면에 보이는 곳
 const FIRST = 'gangdong';              // 시안 4번 화면: 서울에 핀 하나
 const DEFAULT = 'pangyo';              // 시안 5번 화면: 처음 보이는 매장 카드
-const C = { ivory: '#fcfaf6', line: '#d2cdc6', blue: '#0c3494', yellow: '#ffc800', bld: '#fbfaf6' };
-const CITY = { dist: 3000, polar: 57, az: 4, pinH: 300 };   // 동네 3D 카메라 (m, 도)
-const PANEL_PIN = { gangdong: 0.407, goyang: 0.407 };      // 패널 이미지 속 핀 머리 높이(기본 0.371)
-const REGIONS = [
-  { name: '수도권', ids: ['gwangmyeong', 'goyang', 'gangdong', 'pangyo', 'songdo', 'giheung'] },
-  { name: '지방', ids: ['daegu', 'dongbusan', 'gwangju', 'daejeon', 'cheonan'] },
+const C = { ivory: '#fcfaf6', line: '#d2cdc6', blue: '#0c3494', yellow: '#ffc800', bld: '#fbfaf6', needle: '#b9b6b0' };
+const CITY = { dist: 2300, polar: 55, az: 10, pin: 260 };   // 동네 3D 카메라 (m, 도) · 핀 높이(m)
+// 목록 순서 = 스크롤 순서: 정규 매장 먼저, 그다음 팝업 매장
+const GROUPS = [
+  { type: 'store', name: '정규 매장' },
+  { type: 'popup', name: '팝업 매장' },
 ];
+const ORDER = GROUPS.flatMap((g) => STORES.filter((s) => s.type === g.type));
+const stepPin = (i) => lerp(T.steps[0], T.steps[1], ORDER.length > 1 ? i / (ORDER.length - 1) : 0);
 
 /** 구간 값: keys = [[pin, 값], ...] 사이를 부드럽게 잇습니다 */
 function kf(p, keys) {
@@ -79,6 +82,15 @@ function yawFor(lat, lon) {
 const byId = (id) => STORES.find((s) => s.id === id);
 const shortName = (s) => s.name.replace(/^이케아 (팝업 )?/, '');
 
+/** 압정 핀 한 개 (은색 바늘 + 동그란 머리). 바늘 끝 = 원점, 위쪽(+Y)으로 섬 */
+function pushpinGeometries(len, head, needle) {
+  const n = new THREE.CylinderGeometry(needle, needle * 0.25, len, 6, 1, true);
+  n.translate(0, len / 2, 0);
+  const h = new THREE.SphereGeometry(head, 16, 12);
+  h.translate(0, len + head * 0.75, 0);
+  return { needle: n, head: h };
+}
+
 export class StoresSection extends BaseSection {
   static meta = {
     id: 'stores',
@@ -95,22 +107,20 @@ export class StoresSection extends BaseSection {
   template() {
     const pins = STORES.map((s) => {
       const [x, y] = mapXY(s.lat, s.lon);
-      return `<button type="button" class="${s.type === 'popup' ? 'is-popup' : ''}" data-id="${s.id}" aria-label="${s.name} 동네 보기"
-        style="left:${((x / MAP.w) * 100).toFixed(2)}%;top:${((y / MAP.h) * 100).toFixed(2)}%"></button>`;
+      return `<button type="button" class="sf-pin${s.type === 'popup' ? ' is-popup' : ''}" data-id="${s.id}" aria-label="${s.name} 매장 정보 보기"
+        style="left:${((x / MAP.w) * 100).toFixed(3)}%;top:${((y / MAP.h) * 100).toFixed(3)}%"><i></i></button>`;
     }).join('');
-    const panels = REGIONS.map((r) => `
-      <div class="sf-region"><h4>${r.name}</h4>
-        ${r.ids.map((id) => {
-          const s = byId(id);
-          return `<button type="button" class="sf-panel${s.type === 'popup' ? ' is-popup' : ''}" data-id="${id}" style="--top:${((PANEL_PIN[id] || 0.371) * 100).toFixed(1)}%">
-            <span class="img"><img src="${FILES.panel(id)}" alt="" loading="lazy" /><i class="pin"></i></span>
-            <span class="cap">${shortName(s)}<small>${s.type === 'popup' ? 'Pop-up' : 'Store'}</small></span>
-          </button>`;
-        }).join('')}
-      </div>`).join('');
+    let n = 0;
+    const groups = GROUPS.map((g) => {
+      const items = ORDER.filter((s) => s.type === g.type);
+      return `<div class="sf-group${g.type === 'popup' ? ' is-popup' : ''}">
+        <h4><i></i>${g.name}<b>${String(items.length).padStart(2, '0')}</b></h4>
+        <ol>${items.map((s) => `<li><button type="button" data-i="${n++}"><span>${String(n).padStart(2, '0')}</span>${shortName(s)}</button></li>`).join('')}</ol>
+      </div>`;
+    }).join('');
     const list = FAMILY.map((w) => `<li>${w}</li>`).join('');
     return /* html */ `
-      <div class="sf-city" aria-hidden="true"><div class="sf-citylabels"></div><span class="sf-citypin"></span></div>
+      <div class="sf-city" aria-hidden="true"><div class="sf-citylabels"></div><i class="sf-veil"></i></div>
 
       <div class="sf-reveal">
         <figure class="sf-map" aria-label="이케아 국내 매장 지도">
@@ -119,7 +129,15 @@ export class StoresSection extends BaseSection {
         </figure>
       </div>
 
-      <section class="sf-panels" aria-label="지역별 이케아 매장">${panels}</section>
+      <section class="sf-info" aria-label="이케아 국내 매장 정보">
+        <nav class="sf-stores" aria-label="매장 목록">${groups}</nav>
+        <div class="sf-detail" aria-live="polite">
+          <span class="kind"></span>
+          <h3></h3>
+          <p></p>
+          <a target="_blank" rel="noopener">View more</a>
+        </div>
+      </section>
 
       <section class="sf-family" aria-label="IKEA Family 혜택">
         <p class="sf-offers">Store offers<br />IKEA Family</p>
@@ -142,7 +160,7 @@ export class StoresSection extends BaseSection {
         <span class="sf-navbg"></span>
         <span class="sf-bar"></span>
         <button type="button" data-go="${GO.location}" style="left:calc(560 * var(--u))">Store location</button>
-        <button type="button" data-go="${GO.city}" style="left:calc(959 * var(--u))">Store information</button>
+        <button type="button" data-go="${GO.info}" style="left:calc(959 * var(--u))">Store information</button>
         <button type="button" data-go="${GO.family}" style="left:calc(1360 * var(--u))">IKEA Family service</button>
       </nav>
 
@@ -159,9 +177,10 @@ export class StoresSection extends BaseSection {
       w1: this.$('.sf-w1'), w2: this.$('.sf-w2'), cur: this.$('.sf-w2 .cur'), alt: this.$('.sf-w2 .alt'),
       v1: this.$('.sf-vl.v1'), v2: this.$('.sf-vl.v2'), v3: this.$('.sf-vl.v3'), mid: this.$('.sf-h.mid'),
       bar: this.$('.sf-bar'), nav: this.$('.sf-nav'), grid: this.$('.sf-grid'), navBtns: this.$$('.sf-nav button'),
-      reveal: this.$('.sf-reveal'), map: this.$('.sf-map'), mapImg: this.$('.sf-map img'), pins: this.$$('.sf-dots button'),
-      city: this.$('.sf-city'), cityLabels: this.$('.sf-citylabels'), cityPin: this.$('.sf-citypin'),
-      panels: this.$('.sf-panels'), panelBtns: this.$$('.sf-panel'),
+      reveal: this.$('.sf-reveal'), map: this.$('.sf-map'), mapImg: this.$('.sf-map img'), pins: this.$$('.sf-pin'),
+      city: this.$('.sf-city'), cityLabels: this.$('.sf-citylabels'), veil: this.$('.sf-veil'),
+      info: this.$('.sf-info'), items: this.$$('.sf-stores button'),
+      kind: this.$('.sf-detail .kind'), name: this.$('.sf-detail h3'), addr: this.$('.sf-detail p'), link: this.$('.sf-detail a'),
       card: this.$('.sf-card'), cardName: this.$('.sf-card h3'), cardAddr: this.$('.sf-card p'), cardLink: this.$('.sf-card a'),
       attr: this.$('.sf-attr'),
       family: this.$('.sf-family'), photo: this.$('.sf-photo'), special: this.$('.sf-special'), words: this.$$('.sf-list li'),
@@ -170,7 +189,7 @@ export class StoresSection extends BaseSection {
     this.camera.fov = FOV;
     this.camera.updateProjectionMatrix();
     this.scene.background = new THREE.Color(C.ivory);
-    this.scene.add(new THREE.HemisphereLight('#ffffff', '#cfc9bd', 1.35)); // 동네 3D 건물용 (지구본은 조명 영향 없음)
+    this.scene.add(new THREE.HemisphereLight('#ffffff', '#cfc9bd', 1.35));
     const sun = new THREE.DirectionalLight('#fffaf0', 1.9);
     sun.position.set(-0.55, 1, 0.35);
     this.scene.add(sun);
@@ -178,25 +197,22 @@ export class StoresSection extends BaseSection {
 
     this.spin = yawFor(EUROPE.lat, EUROPE.lon);
     this.from = null;
+    this.veil = 0;
     this.cities = new Map();
-    this.cityGroup = new THREE.Group();
-    this.cityGroup.visible = false;
-    this.scene.add(this.cityGroup);
-    this.bldMat = new THREE.MeshLambertMaterial({ color: C.bld });
+    this.buildCityStage();
     this.pickStore(byId(DEFAULT) || STORES[0]);
 
-    // 평면 지도 핀: 마우스 = 카드, 클릭 = 그 매장 동네 3D 로
+    // 평면 지도 핀: 마우스 = 카드, 클릭 = 그 매장 정보 화면으로
     this.dom.pins.forEach((b) => {
       const store = byId(b.dataset.id);
       b.addEventListener('pointerenter', () => this.pickStore(store));
       b.addEventListener('focus', () => this.pickStore(store));
-      b.addEventListener('click', (e) => { e.stopPropagation(); this.pickStore(store); this.ctx.scroll.scrollTo(GO.city); });
+      b.addEventListener('click', (e) => { e.stopPropagation(); this.ctx.scroll.scrollTo(stepPin(ORDER.indexOf(store))); });
     });
-    // 매장 패널: 클릭 = 그 매장 동네 3D 로
-    this.dom.panelBtns.forEach((b) => b.addEventListener('click', (e) => {
+    // 매장 목록: 클릭 = 그 매장 차례로 스크롤
+    this.dom.items.forEach((b) => b.addEventListener('click', (e) => {
       e.stopPropagation();
-      this.pickStore(byId(b.dataset.id));
-      this.ctx.scroll.scrollTo(GO.city);
+      this.ctx.scroll.scrollTo(stepPin(+b.dataset.i));
     }));
     // 지구본이 자전 중일 때 클릭 → 바로 한반도로
     this.el.addEventListener('click', (e) => {
@@ -248,63 +264,66 @@ export class StoresSection extends BaseSection {
     rim.renderOrder = oval.renderOrder = 3;
     this.face.add(rim, oval);
 
-    // 매장 핀 (cheesedesign 핀처럼): 아래로 흐려지는 가는 기둥 + 윤기 있는 동그란 머리와 은은한 빛
+    // 매장 핀: 지구본에 꽂힌 압정 (은색 바늘 + 동그란 머리, 조명을 받아 입체로 보임)
     const list = [
       ...WORLD.map(([lat, lon]) => ({ lat, lon, color: C.blue })),
       ...STORES.map((s) => ({ lat: s.lat, lon: s.lon, color: s.type === 'popup' ? C.yellow : C.blue })),
     ];
-    const stem = [], stemCol = [], heads = [], colors = [];
-    const col = new THREE.Color();
-    for (const d of list) {
-      const a = latLonToVec3(d.lat, d.lon, R), b = latLonToVec3(d.lat, d.lon, R * 1.04);
-      stem.push(a.x, a.y, a.z, b.x, b.y, b.z);
-      col.set(d.color);
-      stemCol.push(col.r, col.g, col.b, 0, col.r, col.g, col.b, 1); // 표면 쪽은 투명
-      const h = latLonToVec3(d.lat, d.lon, R * 1.042);
-      heads.push(h.x, h.y, h.z);
-      colors.push(col.r, col.g, col.b);
-    }
-    const stemGeo = new THREE.BufferGeometry();
-    stemGeo.setAttribute('position', new THREE.Float32BufferAttribute(stem, 3));
-    stemGeo.setAttribute('color', new THREE.Float32BufferAttribute(stemCol, 4));
-    this.stemMat = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0, depthWrite: false });
-    this.stems = new THREE.LineSegments(stemGeo, this.stemMat);
-    this.globe.add(this.stems);
-    // 머리 텍스처: 흰 하이라이트 → 어두운 가장자리 (핀 색과 곱해져 윤기가 생김) + 바깥 빛
-    const dot = document.createElement('canvas');
-    dot.width = dot.height = 128;
-    const g = dot.getContext('2d');
-    const glow = g.createRadialGradient(64, 64, 20, 64, 64, 62);
-    glow.addColorStop(0, 'rgba(255,255,255,.55)');
-    glow.addColorStop(1, 'rgba(255,255,255,0)');
-    g.fillStyle = glow;
-    g.fillRect(0, 0, 128, 128);
-    const ball = g.createRadialGradient(54, 52, 2, 64, 64, 28);
-    ball.addColorStop(0, '#ffffff');
-    ball.addColorStop(0.35, '#e6e6e6');
-    ball.addColorStop(1, '#8c8c8c');
-    g.fillStyle = ball;
-    g.beginPath(); g.arc(64, 64, 28, 0, Math.PI * 2); g.fill();
-    const headGeo = new THREE.BufferGeometry();
-    headGeo.setAttribute('position', new THREE.Float32BufferAttribute(heads, 3));
-    headGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-    this.headMat = new THREE.PointsMaterial({
-      size: 0.16, sizeAttenuation: true, map: new THREE.CanvasTexture(dot), vertexColors: true,
-      transparent: true, opacity: 0, depthWrite: false, alphaTest: 0.01,
+    const g = pushpinGeometries(R * 0.06, R * 0.011, R * 0.0016);
+    this.needleMat = new THREE.MeshStandardMaterial({ color: C.needle, metalness: 0.6, roughness: 0.35, transparent: true, opacity: 0 });
+    this.headMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.32, metalness: 0, transparent: true, opacity: 0 });
+    const needles = new THREE.InstancedMesh(g.needle, this.needleMat, list.length);
+    const heads = new THREE.InstancedMesh(g.head, this.headMat, list.length);
+    const m = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), one = new THREE.Vector3(1, 1, 1), col = new THREE.Color();
+    list.forEach((d, i) => {
+      const n = latLonToVec3(d.lat, d.lon, 1);
+      q.setFromUnitVectors(up, n);
+      m.compose(n.clone().multiplyScalar(R * 0.995), q, one);
+      needles.setMatrixAt(i, m);
+      heads.setMatrixAt(i, m);
+      heads.setColorAt(i, col.set(d.color));
     });
-    this.globe.add(new THREE.Points(headGeo, this.headMat));
+    this.pins = new THREE.Group();
+    this.pins.add(needles, heads);
+    this.globe.add(this.pins);
   }
 
-  /* ---------------- 매장 카드 · 동네 3D ---------------- */
+  /* ---------------- 매장 정보 (동네 3D) ---------------- */
+  buildCityStage() {
+    this.cityRoot = new THREE.Group();
+    this.cityRoot.visible = false;
+    this.scene.add(this.cityRoot);
+    this.cityHolder = new THREE.Group();
+    this.cityRoot.add(this.cityHolder);
+    this.bldMat = new THREE.MeshLambertMaterial({ color: C.bld });
+    // 매장 자리에 꽂힌 큰 압정
+    const g = pushpinGeometries(CITY.pin, 30, 3.2);
+    this.cityPinHead = new THREE.MeshStandardMaterial({ color: C.blue, roughness: 0.32 });
+    const pin = new THREE.Group();
+    pin.add(
+      new THREE.Mesh(g.needle, new THREE.MeshStandardMaterial({ color: C.needle, metalness: 0.6, roughness: 0.35 })),
+      new THREE.Mesh(g.head, this.cityPinHead),
+    );
+    this.cityRoot.add(pin);
+  }
+
   pickStore(s) {
-    if (!s) return;
+    if (!s || this.selected === s) return;
     this.selected = s;
     const d = this.dom;
-    d.cardName.textContent = s.name;
-    d.cardAddr.textContent = s.addr;
-    d.cardLink.href = s.url;
+    const popup = s.type === 'popup';
+    d.cardName.textContent = d.name.textContent = s.name;
+    d.cardAddr.textContent = d.addr.textContent = s.addr;
+    d.cardLink.href = d.link.href = s.url;
+    d.kind.textContent = popup ? 'Pop-up Store' : 'IKEA Store';
+    d.info.classList.toggle('is-popup', popup);
     d.pins.forEach((b) => b.classList.toggle('is-sel', b.dataset.id === s.id));
-    d.panelBtns.forEach((b) => b.classList.toggle('is-sel', b.dataset.id === s.id));
+    d.items.forEach((b) => {
+      const on = ORDER[+b.dataset.i] === s;
+      b.classList.toggle('is-on', on);
+      if (on) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current');
+    });
+    this.cityPinHead.color.set(popup ? C.yellow : C.blue);
     this.showCity(s.id);
   }
 
@@ -351,16 +370,17 @@ export class StoresSection extends BaseSection {
     return city;
   }
 
-  /** 고른 매장의 동네를 3D 무대에 올립니다 */
+  /** 고른 매장의 동네를 3D 무대에 올립니다 (바뀔 때 배경색으로 살짝 덮었다가 걷힘) */
   async showCity(id) {
     this.cityId = id;
     const city = await this.buildCity(id);
     if (this.cityId !== id) return; // 그사이 다른 매장을 고른 경우
-    this.cityGroup.clear();
-    this.cityGroup.add(city.group);
+    this.cityHolder.clear();
+    this.cityHolder.add(city.group);
     this.cityStations = city.stations;
     this.dom.cityLabels.innerHTML = city.stations
       .map(([name], i) => `<span class="lab" data-i="${i}"><i></i>${name.replace(/역$/, '')}</span>`).join('');
+    this.veil = 1;
   }
 
   leave() {
@@ -372,6 +392,13 @@ export class StoresSection extends BaseSection {
     const t = Math.tan(THREE.MathUtils.degToRad(FOV / 2));
     this.D0 = Math.max((2 * R) / (0.741 * 2 * t), (2 * R) / (0.417 * 2 * t * (w / h)));
     this.vw = w; this.vh = h;
+    // 한반도 지도: 메뉴 아래 높이에 남한(제주 포함)이 다 들어가게, 지도 이미지는 화면을 꽉 채움
+    const nav = (96 / 1080) * h;
+    const k = Math.min((h - nav) / 1010, w / 1150);
+    const cx = (936 / 1920) * w, cy = nav + 392 * k;
+    Object.assign(this.dom.map.style, {
+      width: `${MAP.w * k}px`, left: `${cx - MAP.cx * k}px`, top: `${cy - MAP.cy * k}px`,
+    });
   }
 
   /* ---------------- 매 프레임 ---------------- */
@@ -386,8 +413,7 @@ export class StoresSection extends BaseSection {
     const grow = ease.inOut(at(pin, T.grow));
     const turn = ease.inOut(at(pin, T.turn));
     const reveal = ease.inOut(at(pin, T.reveal));
-    const cityIn = ease.inOut(at(pin, T.city));
-    const panelsIn = ease.inOut(at(pin, T.panels));
+    const infoIn = ease.inOut(at(pin, T.info));
     const fam = ease.inOut(at(pin, T.family));
 
     // ---- 격자선 · 타이틀 (시안 좌표) ----
@@ -396,9 +422,8 @@ export class StoresSection extends BaseSection {
     d.v1.style.transform = `translateX(${px(v1)})`;
     d.v2.style.transform = `translateX(${px(960)})`;
     d.v3.style.transform = `translateX(${px(v3)})`;
-    const gridDim = panelsIn * (1 - fam);  // 매장 패널 화면에서는 세로선·가운데 선을 숨김
-    d.v1.style.opacity = d.v3.style.opacity = d.mid.style.opacity = 1 - gridDim;
-    d.v2.style.opacity = 1 - gridDim;
+    const infoOnly = infoIn * (1 - fam); // 매장 정보 화면: 목록 옆 세로선(560)만 남김
+    d.v2.style.opacity = d.v3.style.opacity = d.mid.style.opacity = 1 - infoOnly;
 
     const sz = kf(pin, [[T.wire[1], 1], [T.grow[1], 0.5]]);
     const x1 = kf(pin, [[T.wire[0], 590], [T.wire[1], 490], [T.grow[1], 319], [T.reveal[0], 319], [T.reveal[1], 115]]);
@@ -408,7 +433,7 @@ export class StoresSection extends BaseSection {
     const swap = ease.inOut(seg(pin, T.reveal[0], T.reveal[1] - 0.02));
     d.cur.style.opacity = 1 - swap;
     d.alt.style.opacity = swap;
-    d.w1.style.opacity = d.w2.style.opacity = (1 - panelsIn) * (1 - fam);
+    d.w1.style.opacity = d.w2.style.opacity = (1 - infoIn) * (1 - fam);
 
     // ---- 상단 진행 바 (시안: 559 → 960 → 1541) ----
     let bar = lerp(559, 960, ease.inOut(seg(pin, T.reveal[0], T.reveal[1])));
@@ -439,8 +464,8 @@ export class StoresSection extends BaseSection {
     const s = lerp(0.27, 1, grow);
     this.tilt.scale.setScalar(s);
 
-    const t = Math.tan(THREE.MathUtils.degToRad(FOV / 2));
     const camD = lerp(this.D0, this.D0 * 0.86, turn); // 한반도를 돌리며 살짝만 다가감
+    const t = Math.tan(THREE.MathUtils.degToRad(FOV / 2));
     const startY = -(574 / 1080 - 0.5) * 2 * this.D0 * t;
     this.tilt.position.set(0, lerp(startY, startY * 0.4, turn), 0);
     this.face.position.copy(this.tilt.position);
@@ -450,25 +475,31 @@ export class StoresSection extends BaseSection {
     this.gratMat.opacity = 0.85 * grow;
     this.rimMat.opacity = wire;
     this.ovalMat.opacity = wire * (1 - grow);
+    // 핀이 지구본 안쪽에서 쑥 꽂혀 나옴
     const pinsUp = ease.out(seg(pin, T.grow[0] + 0.03, T.grow[1]));
-    this.headMat.opacity = 0.85 * pinsUp;
-    this.headMat.size = 0.16 * pinsUp;
-    this.stemMat.opacity = 0.7 * pinsUp;
-    this.stems.scale.setScalar(1);
+    this.needleMat.opacity = this.headMat.opacity = pinsUp;
+    this.pins.visible = pinsUp > 0;
+    this.pins.scale.setScalar(lerp(0.95, 1, pinsUp));
 
-    // ---- 동네 3D (평면 지도 다음, 스크롤로 진행) ----
-    const cityOn = cityIn > 0 && panelsIn < 1 && fam < 1;
-    this.cityGroup.visible = cityOn;
-    if (cityOn) {
-      // 위에서 내려다보다가 비스듬히 내려앉고, 머무는 동안 천천히 돎
-      const orbit = at(pin, T.orbit);
-      const pol = THREE.MathUtils.degToRad(lerp(18, CITY.polar, cityIn));
-      const az = THREE.MathUtils.degToRad(CITY.az + orbit * 18 + Math.sin(time * 0.15) * 1.5);
-      const dist = CITY.dist * Math.max(1, 1.5 / (this.vw / this.vh)) * lerp(1.6, 1, cityIn); // 세로로 긴 화면이면 조금 멀리
+    // ---- 매장 정보: 스크롤에 따라 목록 순서대로 매장이 넘어감 ----
+    const infoOn = infoIn > 0 && fam < 1;
+    if (pin >= T.info[0]) this.pickStore(ORDER[Math.round(at(pin, T.steps) * (ORDER.length - 1))]);
+    this.cityRoot.visible = infoOn;
+    const nav = (96 / 1080) * this.vh;
+    const paneL = (560 / 1920) * this.vw;
+    if (infoOn) {
+      // 위에서 내려다보다가 비스듬히 내려앉고, 머무는 동안 아주 천천히 흔들림
+      const pol = THREE.MathUtils.degToRad(lerp(20, CITY.polar, infoIn));
+      const az = THREE.MathUtils.degToRad(CITY.az + Math.sin(time * 0.15) * 1.5);
+      const paneW = this.vw - paneL, paneH = this.vh - nav;
+      const dist = CITY.dist * Math.max(1, 1.38 / (paneW / paneH)) * lerp(1.5, 1, infoIn);
       this.camera.position.set(dist * Math.sin(pol) * Math.sin(az), dist * Math.cos(pol), dist * Math.sin(pol) * Math.cos(az));
-      this.camera.lookAt(0, 0, 420 * cityIn); // 매장이 카드보다 위에 보이게
+      this.camera.lookAt(-150, 0, 250);
       this.camera.near = 10; this.camera.far = 20000;
+      // 3D 의 가운데를 목록 오른쪽 영역 가운데로 옮김
+      this.camera.setViewOffset(this.vw, this.vh, -paneL / 2, -nav / 2, this.vw, this.vh);
     } else {
+      this.camera.clearViewOffset();
       this.camera.position.set(0, 0, camD);
       this.camera.lookAt(0, 0, 0);
       this.camera.near = 0.01; this.camera.far = 100;
@@ -485,47 +516,40 @@ export class StoresSection extends BaseSection {
     const [cx, cy] = this.revealAt || [this.vw / 2, this.vh / 2];
     const far = Math.hypot(Math.max(cx, this.vw - cx), Math.max(cy, this.vh - cy));
     d.reveal.style.clipPath = reveal >= 1 ? 'none' : `circle(${(reveal * far).toFixed(1)}px at ${cx.toFixed(1)}px ${cy.toFixed(1)}px)`;
-    d.reveal.style.visibility = reveal > 0 && cityIn < 1 ? 'visible' : 'hidden';
-    d.reveal.style.opacity = 1 - cityIn;
+    d.reveal.style.visibility = reveal > 0 && infoIn < 1 ? 'visible' : 'hidden';
+    d.reveal.style.opacity = 1 - infoIn;
 
     // ---- 평면 지도 (시안 4·5번) ----
     d.mapImg.style.opacity = lerp(1, 0.6, ease.inOut(at(pin, T.dim)));
     d.map.classList.toggle('is-on', pin > T.map[0] && pin < T.map[1]);
     d.pins.forEach((b, i) => {
-      // 4번에서는 서울(강동) 핀 하나만, 5번에서 나머지가 차례로 등장
+      // 4번에서는 서울(강동) 핀 하나만, 5번에서 나머지가 차례로 꽂힘
       const a = b.dataset.id === FIRST ? at(pin, T.first) : seg(pin, T.dim[0] + (i % 6) * 0.006, T.dim[0] + 0.03 + (i % 6) * 0.006);
       b.style.setProperty('--pop', ease.out(a).toFixed(3));
     });
-    const cardOn = pin > T.dim[0] + 0.02 && pin < T.panels[0] + 0.02;
-    d.card.classList.toggle('is-on', cardOn);
+    d.card.classList.toggle('is-on', pin > T.dim[0] + 0.02 && pin < T.info[0] + 0.01);
 
-    // ---- 동네 3D 표시 (핀 · 역 이름 · 가장자리를 배경색으로 흐리게) ----
-    const cityShow = cityIn * (1 - panelsIn);
-    d.city.style.opacity = cityShow;
-    d.attr.style.opacity = Math.max(cityShow, panelsIn * (1 - fam));
-    if (cityOn && this.cityStations) {
+    // ---- 매장 정보 화면 DOM ----
+    d.info.style.opacity = infoIn;
+    d.info.classList.toggle('is-on', infoIn > 0.95 && fam < 0.05);
+    d.info.style.setProperty('--in', infoIn.toFixed(3));
+    d.city.style.opacity = infoIn;
+    d.attr.style.opacity = infoIn * (1 - fam);
+    this.veil = Math.max(0, this.veil - dt * 2.4);
+    d.veil.style.opacity = ease.inOut(this.veil).toFixed(3);
+    if (infoOn && this.cityStations) {
+      this.cityRoot.updateMatrixWorld(true);
       const v = new THREE.Vector3();
-      const toScreen = (x, y, z) => { v.set(x, y, z).project(this.camera); return [(v.x * 0.5 + 0.5) * this.vw, (-v.y * 0.5 + 0.5) * this.vh, v.z]; };
-      const [, gy] = toScreen(0, 0, 0);
-      const [hx, hy] = toScreen(0, CITY.pinH, 0);
-      d.cityPin.style.transform = `translate(${hx}px, ${hy}px)`;
-      d.cityPin.style.height = `${Math.max(0, gy - hy)}px`;
-      d.cityPin.classList.toggle('is-popup', this.selected?.type === 'popup');
-      const cr = d.card.getBoundingClientRect();
-      const hostR = this.el.getBoundingClientRect();
       [...d.cityLabels.children].forEach((el) => {
         const [, x, y] = this.cityStations[+el.dataset.i];
-        const [sx, sy, z] = toScreen(x, 0, y);
-        const nx = sx / this.vw - 0.5, ny = sy / this.vh - 0.55;
+        v.set(x, 0, y).project(this.camera);
+        const sx = (v.x * 0.5 + 0.5) * this.vw, sy = (-v.y * 0.5 + 0.5) * this.vh;
         el.style.transform = `translate(${sx}px, ${sy}px)`;
-        const onCard = sx + hostR.left > cr.left - 20 && sx + hostR.left < cr.right + 20 && sy + hostR.top > cr.top - 20 && sy + hostR.top < cr.bottom + 20;
-        el.style.opacity = z < 1 && !onCard && nx * nx + ny * ny < 0.045 ? 1 : 0;
+        // 3D 영역 안쪽 + 아래 매장 이름과 겹치지 않는 곳만
+        const ok = v.z < 1 && sx > paneL + 80 && sx < this.vw - 120 && sy > nav + 60 && sy < this.vh * 0.66;
+        el.style.opacity = ok ? 1 : 0;
       });
     }
-
-    // ---- 매장 패널 (아래에서 올라옴) ----
-    d.panels.style.transform = `translateY(${(1 - panelsIn) * 100}%)`;
-    d.panels.classList.toggle('is-on', panelsIn > 0.95 && fam < 0.05);
 
     // ---- IKEA FAMILY ----
     d.family.style.transform = `translateY(${(1 - fam) * 100}%)`;
