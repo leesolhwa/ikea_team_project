@@ -493,7 +493,7 @@ export class StoresSection extends BaseSection {
         const [sx, sy, z] = toScreen(x, 0, y);
         const nx = sx / this.vw - 0.5, ny = sy / this.vh - 0.55;
         el.style.transform = `translate(${sx}px, ${sy}px)`;
-        el.style.opacity = z < 1 && nx * nx + ny * ny < 0.09 ? 1 : 0;
+        el.style.opacity = z < 1 && nx * nx + ny * ny < 0.045 ? 1 : 0;
       });
     }
 
