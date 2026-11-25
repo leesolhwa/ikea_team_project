@@ -85,12 +85,12 @@
 .sec-stores .is-popup { --pc: #ffc800; }
 .sec-stores .sf-pin {
   --pop: 0; --s: 1;
-  position: absolute; width: 8px; height: 8px; padding: 0; border: 0; border-radius: 50%; background: var(--pc); cursor: pointer;
+  position: absolute; width: 12px; height: 12px; padding: 0; border: 0; border-radius: 50%; background: var(--pc); cursor: pointer;
   opacity: var(--pop); transform: translate(-50%, -50%) scale(calc((0.4 + 0.6 * var(--pop)) * var(--s))); transition: transform .25s;
 }
 .sec-stores .sf-pin::before { content: ''; position: absolute; inset: -14px; border-radius: 50%; } /* 누르기 쉬운 영역 */
 .sec-stores .sf-pin i { display: none; }
-.sec-stores .sf-pin:hover, .sec-stores .sf-pin:focus-visible, .sec-stores .sf-pin.is-sel { --s: 1.6; outline: none; }
+.sec-stores .sf-pin:hover, .sec-stores .sf-pin:focus-visible, .sec-stores .sf-pin.is-sel { --s: 1.4; outline: none; }
 .sec-stores .sf-pin:focus-visible { box-shadow: 0 0 0 2px var(--ivory), 0 0 0 4px var(--navy); }
 
 .sec-stores .sf-attr { position: absolute; z-index: 4; right: 20px; bottom: 16px; margin: 0; font: 400 11px/1 var(--sans); color: #8a8a86; opacity: 0; }

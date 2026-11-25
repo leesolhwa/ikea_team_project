@@ -255,7 +255,7 @@ export class StoresSection extends BaseSection {
     };
     this.globeCenter = { value: new THREE.Vector3() };
     this.dotMat = mat(0.052);
-    this.storeDotMat = mat(0.052);
+    this.storeDotMat = mat(0.085); // 매장 점은 망점보다 크게
     this.buildDots();
   }
 
