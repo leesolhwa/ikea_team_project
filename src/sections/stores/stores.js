@@ -289,7 +289,7 @@ export class StoresSection extends BaseSection {
     headGeo.setAttribute('position', new THREE.Float32BufferAttribute(heads, 3));
     headGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
     this.headMat = new THREE.PointsMaterial({
-      size: 0.07, sizeAttenuation: true, map: new THREE.CanvasTexture(dot), vertexColors: true,
+      size: 0.16, sizeAttenuation: true, map: new THREE.CanvasTexture(dot), vertexColors: true,
       transparent: true, opacity: 0, depthWrite: false, alphaTest: 0.01,
     });
     this.globe.add(new THREE.Points(headGeo, this.headMat));
@@ -452,7 +452,7 @@ export class StoresSection extends BaseSection {
     this.ovalMat.opacity = wire * (1 - grow);
     const pinsUp = ease.out(seg(pin, T.grow[0] + 0.03, T.grow[1]));
     this.headMat.opacity = 0.85 * pinsUp;
-    this.headMat.size = 0.07 * pinsUp;
+    this.headMat.size = 0.16 * pinsUp;
     this.stemMat.opacity = 0.7 * pinsUp;
     this.stems.scale.setScalar(1);
 
