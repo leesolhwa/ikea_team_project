@@ -3,10 +3,9 @@
 // 스크롤 흐름 (구간 값은 아래 T 에서 한 번에 조정)
 //  1. 타이틀      STORE WORLDWIDE → 글자가 벌어지며 선 지구본(원 + 세로 타원)
 //  2. 지구본      유럽 정면, 대륙은 망점 · 이케아 매장이 있는 점만 파랑, 제자리 자전 (지구본 클릭 = 바로 한반도로)
-//  3. 전환        한반도를 정면으로 돌린 뒤, 그 자리에서 원이 퍼지며 지구본과 같은 스타일의 한반도 지도가 열림
-//  4. 평면 지도    서울 핀 하나 → 지도가 연해지고 전체 핀 (핀에 마우스를 올릴 때만 매장 카드, 클릭 = 매장 정보로)
-//  5. 매장 정보    cheesedesign 처럼 두 묶음: 정규 매장 패널 9개 | 팝업 매장 패널 2개 (매장 동네 3D, © OpenStreetMap)
-//  6. FAMILY      시안 FAMILY 화면, 오른쪽 단어 목록이 위로 흐름 (santalarch 방식)
+//  3. 전환        한반도를 정면으로 돌린 뒤 그대로 확대 → 지구본 망점이 같은 투영의 망점 한반도 지도로 이어짐
+//  4. 평면 지도    서울 점 하나 → 전체 매장 점 (점에 마우스를 올리거나 누르면 매장 카드)
+//  5. FAMILY      시안 FAMILY 화면, 오른쪽 단어 목록이 위로 흐름 (santalarch 방식)
 import * as THREE from 'three';
 import { BaseSection } from '../../core/BaseSection.js';
 import { ease, seg, lerp, clamp } from '../../core/tween.js';
@@ -17,17 +16,15 @@ const FILES = {
   land: 'assets/images/stores/globe-land.png',     // 지구본 대륙 판정용 (Natural Earth, 화면에는 안 보임)
   korea: 'assets/images/stores/korea-map.png',     // 한반도 망점 지도 (해안선 단순화, 안쪽 큰 점 → 해안 작은 점)
   family: 'assets/images/stores/family-billy.jpg', // 시안 FAMILY 사진
-  panel: (id) => `assets/images/stores/panels/${id}.jpg`, // 매장 동네 3D (OpenStreetMap 건물을 미리 렌더링, 매장 = 이미지 정가운데)
 };
 
 /** 스크롤 구간 (pin 0~1) */
 const T = {
-  wire: [0.02, 0.08], grow: [0.08, 0.16], spin: [0.16, 0.24], turn: [0.24, 0.33], reveal: [0.33, 0.41],
-  first: [0.39, 0.43], dim: [0.45, 0.5], map: [0.48, 0.56],   // map = 평면 지도에서 핀을 고를 수 있는 구간
-  info: [0.56, 0.63],     // 매장 정보 패널이 아래에서 올라옴
-  family: [0.8, 0.87], list: [0.87, 0.99],
+  wire: [0.02, 0.08], grow: [0.08, 0.16], spin: [0.16, 0.24], turn: [0.24, 0.33], reveal: [0.33, 0.45],
+  first: [0.44, 0.47], dim: [0.47, 0.51], map: [0.49, 0.64],   // map = 평면 지도에서 매장 점을 고를 수 있는 구간
+  family: [0.64, 0.72], list: [0.72, 0.99],
 };
-const GO = { location: 0.18, info: 0.7, family: 0.87 }; // 메뉴로 이동할 위치
+const GO = { location: 0.18, info: 0.56, family: 0.72 }; // 메뉴로 이동할 위치
 
 // 한반도 지도 이미지 (지구본 정면과 같은 정사영, 3000 × 1400 시안 px, 2배 해상도)
 // 중심 (127.8°E, 36.5°N) = (1500, 700), 중심에서 경도 1도 = 150px
@@ -47,12 +44,6 @@ const EUROPE = { lat: 44, lon: 16 };   // 시안 3번 화면에서 정면에 보
 const FIRST = 'gangdong';              // 시안 4번 화면: 서울에 핀 하나
 const DEFAULT = 'pangyo';              // 시안 5번 화면: 처음 보이는 매장 카드
 const C = { ivory: '#fcfaf6', line: '#d2cdc6', blue: '#0c3494', yellow: '#ffc800', dot: '#c9c3ba' };
-const PANEL_PIN = { gangdong: 0.407, goyang: 0.407 }; // 패널 이미지 속 핀 머리 높이 (이미지 높이 비율, 기본 0.371)
-const GROUPS = [
-  { type: 'store', name: '정규 매장', kind: 'Store' },
-  { type: 'popup', name: '팝업 매장', kind: 'Pop-up' },
-];
-
 /** 구간 값: keys = [[pin, 값], ...] 사이를 부드럽게 잇습니다 */
 function kf(p, keys) {
   if (p <= keys[0][0]) return keys[0][1];
@@ -107,18 +98,6 @@ export class StoresSection extends BaseSection {
       return `<button type="button" class="sf-pin${s.type === 'popup' ? ' is-popup' : ''}" data-id="${s.id}" aria-label="${s.name} 매장 정보 보기"
         style="left:${((x / MAP.w) * 100).toFixed(3)}%;top:${((y / MAP.h) * 100).toFixed(3)}%"><i></i></button>`;
     }).join('');
-    const panels = GROUPS.map((g) => {
-      const items = STORES.filter((s) => s.type === g.type);
-      return `<div class="sf-group sf-group-${g.type}${g.type === 'popup' ? ' is-popup' : ''}">
-        <h4><i></i>${g.name}<b>${String(items.length).padStart(2, '0')}</b></h4>
-        <div class="sf-grid-panels">${items.map((s) => `
-          <a class="sf-panel" data-id="${s.id}" data-top="${PANEL_PIN[s.id] || 0.371}" href="${s.url}" target="_blank" rel="noopener" aria-label="${s.name} · ${s.addr}">
-            <span class="img"><img src="${FILES.panel(s.id)}" alt="" loading="lazy" /><i class="pin"></i></span>
-            <span class="cap"><b>${shortName(s)}</b><small>${s.addr}</small></span>
-          </a>`).join('')}
-        </div>
-      </div>`;
-    }).join('');
     const list = FAMILY.map((w) => `<li>${w}</li>`).join('');
     return /* html */ `
       <div class="sf-reveal">
@@ -127,8 +106,6 @@ export class StoresSection extends BaseSection {
           <div class="sf-dots">${pins}</div>
         </figure>
       </div>
-
-      <section class="sf-panels" aria-label="이케아 국내 매장">${panels}</section>
 
       <section class="sf-family" aria-label="IKEA Family 혜택">
         <p class="sf-offers">Store offers<br />IKEA Family</p>
@@ -159,7 +136,6 @@ export class StoresSection extends BaseSection {
         <div><h3></h3><p></p></div>
         <a target="_blank" rel="noopener">View more</a>
       </article>
-      <p class="sf-attr">지도 데이터 © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors</p>
     `;
   }
 
@@ -169,9 +145,7 @@ export class StoresSection extends BaseSection {
       v1: this.$('.sf-vl.v1'), v2: this.$('.sf-vl.v2'), v3: this.$('.sf-vl.v3'), mid: this.$('.sf-h.mid'),
       bar: this.$('.sf-bar'), nav: this.$('.sf-nav'), grid: this.$('.sf-grid'), navBtns: this.$$('.sf-nav button'),
       reveal: this.$('.sf-reveal'), map: this.$('.sf-map'), mapImg: this.$('.sf-map img'), pins: this.$$('.sf-pin'),
-      panels: this.$('.sf-panels'), panelEls: this.$$('.sf-panel'),
       card: this.$('.sf-card'), cardName: this.$('.sf-card h3'), cardAddr: this.$('.sf-card p'), cardLink: this.$('.sf-card a'),
-      attr: this.$('.sf-attr'),
       family: this.$('.sf-family'), photo: this.$('.sf-photo'), special: this.$('.sf-special'), words: this.$$('.sf-list li'),
     };
 
@@ -197,15 +171,11 @@ export class StoresSection extends BaseSection {
       b.addEventListener('focus', show);
       b.addEventListener('pointerleave', hide);
       b.addEventListener('blur', hide);
-      b.addEventListener('click', (e) => { e.stopPropagation(); this.pickStore(store); this.ctx.scroll.scrollTo(GO.info); });
+      b.addEventListener('click', (e) => { e.stopPropagation(); show(); }); // 터치 화면에서는 눌러서 카드
     });
     // 카드 위로 마우스를 옮겨도 유지 (VIEW MORE 를 누를 수 있게)
     this.dom.card.addEventListener('pointerenter', () => clearTimeout(this.hideT));
     this.dom.card.addEventListener('pointerleave', () => this.hideCard());
-    this.dom.panelEls.forEach((a) => {
-      a.addEventListener('click', (e) => e.stopPropagation());
-      a.addEventListener('pointerenter', () => this.pickStore(byId(a.dataset.id)));
-    });
     // 지구본이 자전 중일 때 클릭 → 바로 한반도로
     this.el.addEventListener('click', (e) => {
       if (this.pin > T.grow[0] && this.pin < T.turn[0] && this.ctx.stage.pick(e, this.camera, [this.globeHit])) this.ctx.scroll.scrollTo(T.dim[1] + 0.02);
@@ -320,7 +290,6 @@ export class StoresSection extends BaseSection {
     d.cardAddr.textContent = s.addr;
     d.cardLink.href = s.url;
     d.pins.forEach((b) => b.classList.toggle('is-sel', b.dataset.id === s.id));
-    d.panelEls.forEach((a) => a.classList.toggle('is-sel', a.dataset.id === s.id));
   }
 
   hideCard() {
@@ -340,19 +309,6 @@ export class StoresSection extends BaseSection {
     card.style.top = `${r.top - host.top - 6}px`;
   }
 
-  /** 패널 이미지는 object-fit: cover 로 잘리므로, 핀 기둥 길이를 실제 보이는 크기에 맞춤 (매장 = 이미지 정가운데) */
-  layoutPanels() {
-    // 카드 위로 마우스를 옮겨도 유지 (VIEW MORE 를 누를 수 있게)
-    this.dom.card.addEventListener('pointerenter', () => clearTimeout(this.hideT));
-    this.dom.card.addEventListener('pointerleave', () => this.hideCard());
-    this.dom.panelEls.forEach((a) => {
-      const box = a.querySelector('.img');
-      const { width: w, height: h } = box.getBoundingClientRect();
-      const shown = Math.max(w * (640 / 600), h); // 실제로 그려지는 이미지 높이
-      a.style.setProperty('--stem', `${((0.5 - +a.dataset.top) * shown).toFixed(1)}px`);
-    });
-  }
-
   leave() {
     this.el.style.cursor = '';
     clearTimeout(this.hideT);
@@ -370,8 +326,9 @@ export class StoresSection extends BaseSection {
     const cx = (936 / 1920) * w, cy = nav + 392 * k;
     Object.assign(this.dom.map.style, {
       width: `${MAP.w * k}px`, left: `${cx - MAP.cx * k}px`, top: `${cy - MAP.cy * k}px`,
+      transformOrigin: `${(MAP.cx / MAP.w) * 100}% ${(MAP.cy / MAP.h) * 100}%`,
     });
-    requestAnimationFrame(() => this.layoutPanels());
+    this.mapAt = { k, cx, cy };
   }
 
   /* ---------------- 매 프레임 ---------------- */
@@ -386,7 +343,6 @@ export class StoresSection extends BaseSection {
     const grow = ease.inOut(at(pin, T.grow));
     const turn = ease.inOut(at(pin, T.turn));
     const reveal = ease.inOut(at(pin, T.reveal));
-    const infoIn = ease.inOut(at(pin, T.info));
     const fam = ease.inOut(at(pin, T.family));
 
     // ---- 격자선 · 타이틀 (시안 좌표) ----
@@ -395,8 +351,6 @@ export class StoresSection extends BaseSection {
     d.v1.style.transform = `translateX(${px(v1)})`;
     d.v2.style.transform = `translateX(${px(960)})`;
     d.v3.style.transform = `translateX(${px(v3)})`;
-    const infoOnly = infoIn * (1 - fam); // 매장 정보 패널 화면에서는 세로선·가운데 선을 숨김
-    d.v1.style.opacity = d.v2.style.opacity = d.v3.style.opacity = d.mid.style.opacity = 1 - infoOnly;
 
     const sz = kf(pin, [[T.wire[1], 1], [T.grow[1], 0.5]]);
     const x1 = kf(pin, [[T.wire[0], 590], [T.wire[1], 490], [T.grow[1], 319], [T.reveal[0], 319], [T.reveal[1], 115]]);
@@ -406,7 +360,7 @@ export class StoresSection extends BaseSection {
     const swap = ease.inOut(seg(pin, T.reveal[0], T.reveal[1] - 0.02));
     d.cur.style.opacity = 1 - swap;
     d.alt.style.opacity = swap;
-    d.w1.style.opacity = d.w2.style.opacity = (1 - infoIn) * (1 - fam);
+    d.w1.style.opacity = d.w2.style.opacity = 1 - fam;
 
     // ---- 상단 진행 바 (시안: 559 → 960 → 1541) ----
     let bar = lerp(559, 960, ease.inOut(seg(pin, T.reveal[0], T.reveal[1])));
@@ -420,6 +374,7 @@ export class StoresSection extends BaseSection {
     // ---- 지구본 ----
     const globeOn = reveal < 1;
     this.tilt.visible = this.face.visible = globeOn;
+    this.camera.near = 0.01;
     if (turn <= 0) {
       this.from = null;
       if (pin >= T.spin[0] && pin < T.turn[0]) this.spin += dt * 0.1; // 시안 3번(유럽 정면)에서 출발해 제자리 자전
@@ -437,19 +392,30 @@ export class StoresSection extends BaseSection {
     const s = lerp(0.27, 1, grow);
     this.tilt.scale.setScalar(s);
 
-    const camD = lerp(this.D0, this.D0 * 0.86, turn); // 한반도를 돌리며 살짝만 다가감
+    // 한반도를 돌리며 살짝 다가간 뒤(turn), 한반도로 확대(reveal).
+    // 확대 끝 = 지구본 위 한반도가 평면 지도와 같은 크기·같은 자리 (지도는 지구본 정면과 같은 정사영)
     const t = Math.tan(THREE.MathUtils.degToRad(FOV / 2));
+    const { k: mk, cx: mx, cy: my } = this.mapAt;
+    const unitPx = (MAP.r / R) * mk;                       // 확대 끝에서 지구본 1 단위 = 화면 px
+    const gapA = this.D0 * 0.86 - R, gapB = this.vh / 2 / (t * unitPx); // 카메라 ~ 한반도 표면 거리
+    const camD = reveal <= 0 ? lerp(this.D0, this.D0 * 0.86, turn) : R + gapA * Math.pow(gapB / gapA, reveal); // 일정한 속도로 확대
     const startY = -(574 / 1080 - 0.5) * 2 * this.D0 * t;
-    this.tilt.position.set(0, lerp(startY, startY * 0.4, turn), 0);
+    const endPx = this.vh / 2 / (gapB * t);
+    this.tilt.position.set(
+      lerp(0, (mx - this.vw / 2) / endPx, reveal),
+      lerp(lerp(startY, startY * 0.4, turn), -(my - this.vh / 2) / endPx, reveal),
+      0,
+    );
     this.face.position.copy(this.tilt.position);
     this.face.scale.setScalar(s / Math.sqrt(Math.max(0.05, 1 - ((R * s) / camD) ** 2))); // 원근 보정
 
-    this.dotMat.opacity = grow;
-    this.rimMat.opacity = wire;
+    const globeFade = 1 - ease.inOut(seg(reveal, 0.55, 0.95)); // 확대 끝에서 지구본 망점 → 지도 망점
+    this.dotMat.opacity = grow * globeFade;
+    this.rimMat.opacity = wire * (1 - reveal);
     this.ovalMat.opacity = wire * (1 - grow);
     // 핀이 지구본 안쪽에서 쑥 꽂혀 나옴
     const pinsUp = ease.out(seg(pin, T.grow[0] + 0.03, T.grow[1]));
-    this.storeDotMat.opacity = pinsUp;
+    this.storeDotMat.opacity = pinsUp * globeFade;
 
     this.camera.position.set(0, 0, camD);
     this.camera.lookAt(0, 0, 0);
@@ -458,16 +424,18 @@ export class StoresSection extends BaseSection {
     this.camera.updateMatrixWorld();
     this.globeCenter.value.copy(this.tilt.position).applyMatrix4(this.camera.matrixWorldInverse); // 가장자리 흐림용
 
-    // ---- 지도가 원형으로 열림 (원의 중심 = 지구본 위 한반도의 화면 위치) ----
-    if (globeOn) {
+    // ---- 한반도 지도: 확대되는 지구본 위 한반도 자리에 맞춰 붙어서 함께 커짐 ----
+    if (reveal > 0 && reveal < 1) {
       this.globe.updateMatrixWorld(true);
       const kp = latLonToVec3(KOREA.lat, KOREA.lon, R).applyMatrix4(this.globe.matrixWorld).project(this.camera);
-      this.revealAt = [(kp.x * 0.5 + 0.5) * this.vw, (-kp.y * 0.5 + 0.5) * this.vh];
+      const kx = (kp.x * 0.5 + 0.5) * this.vw, ky = (-kp.y * 0.5 + 0.5) * this.vh;
+      const nowPx = this.vh / 2 / ((camD - R * s) * t);
+      d.map.style.transform = `translate(${(kx - mx).toFixed(1)}px, ${(ky - my).toFixed(1)}px) scale(${(nowPx / endPx).toFixed(4)})`;
+    } else {
+      d.map.style.transform = '';
     }
-    const [cx, cy] = this.revealAt || [this.vw / 2, this.vh / 2];
-    const far = Math.hypot(Math.max(cx, this.vw - cx), Math.max(cy, this.vh - cy));
-    d.reveal.style.clipPath = reveal >= 1 ? 'none' : `circle(${(reveal * far).toFixed(1)}px at ${cx.toFixed(1)}px ${cy.toFixed(1)}px)`;
-    d.reveal.style.visibility = reveal > 0 && infoIn < 1 ? 'visible' : 'hidden';
+    d.reveal.style.opacity = ease.inOut(seg(reveal, 0.45, 0.9)).toFixed(3);
+    d.reveal.style.visibility = reveal > 0 && fam < 1 ? 'visible' : 'hidden';
 
     // ---- 평면 지도 (시안 4·5번) ----
     d.mapImg.style.opacity = lerp(1, 0.6, ease.inOut(at(pin, T.dim)));
@@ -478,14 +446,9 @@ export class StoresSection extends BaseSection {
       b.style.setProperty('--pop', ease.out(a).toFixed(3));
     });
     // 매장 카드: 핀에 마우스를 올렸을 때만
-    const mapLive = pin > T.dim[0] + 0.02 && pin < T.info[0] + 0.01;
+    const mapLive = pin > T.dim[0] + 0.02 && pin < T.family[0] + 0.01;
     d.card.classList.toggle('is-on', mapLive && !!this.hovering);
     d.pins.forEach((b) => b.classList.toggle('is-sel', mapLive && !!this.hovering && b.dataset.id === this.selected?.id));
-
-    // ---- 매장 정보 패널 (아래에서 올라옴) ----
-    d.panels.style.transform = `translateY(${(1 - infoIn) * 100}%)`;
-    d.panels.classList.toggle('is-on', infoIn > 0.95 && fam < 0.05);
-    d.attr.style.opacity = infoIn * (1 - fam);
 
     // ---- IKEA FAMILY ----
     d.family.style.transform = `translateY(${(1 - fam) * 100}%)`;

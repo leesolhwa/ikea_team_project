@@ -72,10 +72,10 @@
 }
 .sec-stores .sf-card a:hover, .sec-stores .sf-card a:focus-visible { background: var(--navy); color: var(--ivory); outline: none; }
 
-/* 지도가 원형으로 열리는 층 (안쪽은 아이보리라 지구본이 비치지 않음) */
-.sec-stores .sf-reveal { position: absolute; inset: 0; z-index: 1; background: var(--ivory); visibility: hidden; }
+/* 한반도 지도 층 (지구본 확대에 맞춰 커지며 나타남) */
+.sec-stores .sf-reveal { position: absolute; inset: 0; z-index: 1; visibility: hidden; opacity: 0; overflow: hidden; }
 /* ---------- 한반도 지도 (지구본 스타일, 3000×1400 — 크기·위치는 JS resize 에서 화면을 꽉 채우게 맞춤) ---------- */
-.sec-stores .sf-map { position: absolute; z-index: 1; margin: 0; aspect-ratio: 3000 / 1400; pointer-events: none; }
+.sec-stores .sf-map { position: absolute; z-index: 1; margin: 0; aspect-ratio: 3000 / 1400; pointer-events: none; will-change: transform; }
 .sec-stores .sf-map.is-on { pointer-events: auto; }
 .sec-stores .sf-map img { width: 100%; height: 100%; display: block; }
 .sec-stores .sf-dots { position: absolute; inset: 0; }
@@ -93,53 +93,6 @@
 .sec-stores .sf-pin:hover, .sec-stores .sf-pin:focus-visible, .sec-stores .sf-pin.is-sel { --s: 1.4; outline: none; }
 .sec-stores .sf-pin:focus-visible { box-shadow: 0 0 0 2px var(--ivory), 0 0 0 4px var(--navy); }
 
-.sec-stores .sf-attr { position: absolute; z-index: 4; right: 20px; bottom: 16px; margin: 0; font: 400 11px/1 var(--sans); color: #8a8a86; opacity: 0; }
-.sec-stores .sf-attr a { color: inherit; pointer-events: auto; }
-
-/* ---------- 매장 정보: cheesedesign 처럼 두 묶음 (정규 매장 | 팝업 매장) ---------- */
-.sec-stores .sf-panels {
-  position: absolute; inset: 0; z-index: 2; background: var(--ivory); transform: translateY(100%); will-change: transform; pointer-events: none;
-  display: grid; grid-template-columns: minmax(0, 3fr) 1px minmax(0, 1.25fr); column-gap: calc(40 * var(--u));
-  padding: calc(136 * var(--v)) calc(60 * var(--u)) calc(46 * var(--v));
-}
-.sec-stores .sf-panels.is-on { pointer-events: auto; }
-.sec-stores .sf-panels::before { /* 두 묶음 사이 세로선 */
-  content: ''; grid-column: 2; grid-row: 1; background: var(--rule);
-}
-.sec-stores .sf-group { display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; --pc: #0c3494; --pg: rgba(12, 52, 148, .2); }
-.sec-stores .sf-group-store { grid-column: 1; grid-row: 1; }
-.sec-stores .sf-group-popup { grid-column: 3; grid-row: 1; --pc: #ffc800; --pg: rgba(255, 200, 0, .3); }
-.sec-stores .sf-group h4 {
-  display: flex; align-items: center; gap: 10px; margin: 0 0 calc(18 * var(--v));
-  font: 500 max(15px, calc(20 * var(--f))) / 1 var(--sans); letter-spacing: -0.03em; color: var(--navy);
-}
-.sec-stores .sf-group h4 i { width: 9px; height: 9px; border-radius: 50%; background: var(--pc); }
-.sec-stores .sf-group h4 b { font: 400 max(12px, calc(14 * var(--f))) / 1 var(--display); color: #8a8780; }
-.sec-stores .sf-grid-panels { display: grid; gap: calc(14 * var(--v)) calc(18 * var(--u)); min-height: 0; }
-.sec-stores .sf-group-store .sf-grid-panels { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); }
-.sec-stores .sf-group-popup .sf-grid-panels { grid-template-rows: repeat(2, minmax(0, 1fr)); }
-.sec-stores .sf-panel { display: grid; grid-template-rows: minmax(0, 1fr) auto; min-height: 0; color: var(--navy); text-decoration: none; }
-.sec-stores .sf-panel .img { position: relative; display: block; min-height: 0; overflow: hidden; }
-.sec-stores .sf-panel img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; display: block; transition: transform .6s ease; }
-.sec-stores .sf-panel:hover img, .sec-stores .sf-panel:focus-visible img { transform: scale(1.04); }
-/* 핀: 기둥 끝 = 매장 위치 = 이미지 가운데, 기둥 길이 --stem 은 JS 에서 계산 */
-.sec-stores .sf-panel .pin {
-  position: absolute; left: 50%; top: calc(50% - var(--stem, 40px)); width: 2px; height: var(--stem, 40px); margin-left: -1px;
-  background: linear-gradient(var(--pc) 35%, transparent);
-}
-.sec-stores .sf-panel .pin::before {
-  content: ''; position: absolute; left: 50%; top: 0; width: 13px; height: 13px; border-radius: 50%; transform: translate(-50%, -50%);
-  background: var(--pc); box-shadow: 0 0 0 4px var(--pg), 0 0 8px 5px var(--pg); transition: transform .3s;
-}
-.sec-stores .sf-panel:hover .pin::before, .sec-stores .sf-panel:focus-visible .pin::before, .sec-stores .sf-panel.is-sel .pin::before { transform: translate(-50%, -50%) scale(1.3); }
-.sec-stores .sf-panel .cap { display: grid; gap: 3px; padding-top: calc(8 * var(--v)); text-align: center; }
-.sec-stores .sf-panel .cap b { font: 500 max(13px, calc(16 * var(--f))) / 1.25 var(--sans); letter-spacing: -0.03em; color: #6f6b64; transition: color .25s; }
-.sec-stores .sf-panel .cap small {
-  font: 400 max(11px, calc(12 * var(--f))) / 1.3 var(--sans); letter-spacing: -0.02em; color: #9a968e;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.sec-stores .sf-panel:hover .cap b, .sec-stores .sf-panel:focus-visible .cap b, .sec-stores .sf-panel.is-sel .cap b { color: var(--navy); }
-.sec-stores .sf-panel:focus-visible { outline: 2px solid var(--navy); outline-offset: 4px; }
 
 /* ---------- IKEA FAMILY ---------- */
 .sec-stores .sf-family {
@@ -171,9 +124,6 @@
 .sec-stores .sf-list li { font-weight: 200; will-change: transform; }
 
 @media (max-width: 760px) {
-  .sec-stores .sf-panels { grid-template-columns: 1fr; overflow: auto; }
-  .sec-stores .sf-panels::before { display: none; }
-  .sec-stores .sf-group-popup { grid-column: 1; grid-row: 2; }
   .sec-stores { --u: calc(100vw / 1100); --f: calc(100vw / 1100); }
   .sec-stores .sf-nav button { font-size: 10px; }
   .sec-stores .sf-card { left: 20px; right: 20px; width: auto; top: auto; bottom: 90px; }
