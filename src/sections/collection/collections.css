@@ -410,7 +410,7 @@
   content: ""; position: absolute; inset: 0; border-radius: inherit;
   backdrop-filter: url(#cursor-yellow-match);
 }
-#photo-cursor span { position: absolute; top: 0; left: 28.5%; transform: translateX(-50%); text-align: center; }
+#photo-cursor span { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; white-space: nowrap; }
 @supports (backdrop-filter: url(#cursor-yellow-match)) {
   #photo-cursor { background: transparent; }
 }
