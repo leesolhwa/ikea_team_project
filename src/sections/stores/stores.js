@@ -14,7 +14,6 @@ import { STORES, WORLD, FAMILY } from './data.js';
 // ▼ 교체 포인트
 const FILES = {
   land: 'assets/images/stores/globe-land.png',     // 지구본 대륙 판정용 (Natural Earth, 화면에는 안 보임)
-  korea: 'assets/images/stores/korea-map.png',     // 한반도 망점 지도 (해안선 단순화, 안쪽 큰 점 → 해안 작은 점)
   family: 'assets/images/stores/family-billy.jpg', // 시안 FAMILY 사진
   dots: new URL('./data/korea-dots.json', import.meta.url).href, // 한반도 망점 목록 (지도 이미지와 같은 점)
 };
@@ -76,6 +75,34 @@ const DOT = (() => {
   t.minFilter = THREE.LinearFilter;
   return t;
 })();
+/* ---------- 매장 빛 번짐 (시안 C: 안쪽은 진하게 채우고, 가장자리는 점이 흩어지듯) ---------- */
+const hash = (x, y) => { const v = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return v - Math.floor(v); };
+function vnoise(x, y) { // 부드러운 값 잡음 (-1 ~ 1)
+  const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+  const a = hash(xi, yi), b = hash(xi + 1, yi), c = hash(xi, yi + 1), d = hash(xi + 1, yi + 1);
+  return (a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v) * 2 - 1;
+}
+const GLOW = { reach: 3, warp: 4, hover: 1.6 };   // 번짐 반경(망점 칸) · 테두리 일그러짐 · 마우스 올렸을 때 배율
+/** (u, v) 칸에서 매장 빛 세기. srcs = [{u, v, pop, k}] (k = 세기 배율 0~), 결과 = 색 또는 null(회색) */
+function glowAt(u, v, srcs, reach = GLOW.reach) {
+  const wu = u + GLOW.warp * vnoise(u / 3, v / 3) * 0.6, wv = v + GLOW.warp * vnoise((u + 50) / 6, (v + 50) / 6) * 0.6;
+  let fb = 0, fy = 0;
+  for (const s of srcs) {
+    if (!s.k) continue;
+    const du = wu - s.u, dv = wv - s.v, r = reach * (s.r || 1);
+    if (du * du + dv * dv > 9 * r * r) continue;
+    const f = s.k * Math.exp(-(du * du + dv * dv) / (2 * r * r));
+    if (s.pop) fy += f; else fb += f;
+  }
+  const val = Math.min(1, Math.max(fb, fy));
+  if (val < 0.03) return null;
+  const base = fy > fb ? GLOW_COL.y : GLOW_COL.b;
+  if (val > 0.55) return [base, Math.min(1, 0.55 + val * 0.5)];
+  if (hash(u + 0.37, v + 0.71) < Math.pow(val / 0.55, 1.4)) return [base, 0.35 + 0.5 * val];
+  return null;
+}
+const GLOW_COL = { b: new THREE.Color('#0c3494'), y: new THREE.Color('#ffc800'), gray: new THREE.Color('#c9c3ba') };
 const byId = (id) => STORES.find((s) => s.id === id);
 const shortName = (s) => s.name.replace(/^이케아 (팝업 )?/, '');
 
@@ -94,16 +121,16 @@ export class StoresSection extends BaseSection {
 
   template() {
     const pins = STORES.map((s) => {
-      // 지도 망점(간격 6)과 같은 칸에 맞춰 그 점을 칠한 것처럼
+      // 지도 망점(간격 6)과 같은 칸 (매장 빛이 번지는 중심, 버튼 자체는 보이지 않음)
       const [x, y] = mapXY(s.lat, s.lon).map((v) => 3 + Math.round((v - 3) / 6) * 6);
-      return `<button type="button" class="sf-pin${s.type === 'popup' ? ' is-popup' : ''}" data-id="${s.id}" aria-label="${s.name} 매장 정보 보기"
+      return `<button type="button" class="sf-pin${s.type === 'popup' ? ' is-popup' : ''}" data-id="${s.id}" data-u="${(x - 3) / 6}" data-v="${(y - 3) / 6}" aria-label="${s.name} 매장 정보 보기"
         style="left:${((x / MAP.w) * 100).toFixed(3)}%;top:${((y / MAP.h) * 100).toFixed(3)}%"><i></i></button>`;
     }).join('');
     const list = FAMILY.map((w) => `<li>${w}</li>`).join('');
     return /* html */ `
       <div class="sf-reveal">
+        <canvas class="sf-mapcv" aria-hidden="true"></canvas>
         <figure class="sf-map" aria-label="이케아 국내 매장 지도">
-          <img src="${FILES.korea}" alt="" />
           <div class="sf-dots">${pins}</div>
         </figure>
       </div>
@@ -145,7 +172,7 @@ export class StoresSection extends BaseSection {
       w1: this.$('.sf-w1'), w2: this.$('.sf-w2'), cur: this.$('.sf-w2 .cur'), alt: this.$('.sf-w2 .alt'),
       v1: this.$('.sf-vl.v1'), v2: this.$('.sf-vl.v2'), v3: this.$('.sf-vl.v3'), mid: this.$('.sf-h.mid'),
       bar: this.$('.sf-bar'), nav: this.$('.sf-nav'), grid: this.$('.sf-grid'), navBtns: this.$$('.sf-nav button'),
-      reveal: this.$('.sf-reveal'), map: this.$('.sf-map'), mapImg: this.$('.sf-map img'), pins: this.$$('.sf-pin'),
+      reveal: this.$('.sf-reveal'), map: this.$('.sf-map'), mapCv: this.$('.sf-mapcv'), pins: this.$$('.sf-pin'),
       card: this.$('.sf-card'), cardName: this.$('.sf-card h3'), cardAddr: this.$('.sf-card p'), cardLink: this.$('.sf-card a'),
       family: this.$('.sf-family'), photo: this.$('.sf-photo'), special: this.$('.sf-special'), words: this.$$('.sf-list li'),
     };
@@ -259,30 +286,35 @@ export class StoresSection extends BaseSection {
       const lon = THREE.MathUtils.radToDeg(Math.atan2(Math.sin(th), Math.cos(th)));
       if (isLand(lat, lon)) land.push(latLonToVec3(lat, lon, R * 1.001));
     }
-    const nearest = (lat, lon) => {
-      const p = latLonToVec3(lat, lon, R * 1.001);
-      let best = 0, bd = Infinity;
-      land.forEach((q, i) => { const d = p.distanceToSquared(q); if (d < bd) { bd = d; best = i; } });
-      return best;
-    };
-    const paint = new Map();
-    WORLD.forEach(([lat, lon]) => paint.set(nearest(lat, lon), C.blue));
-    STORES.forEach((s) => paint.set(nearest(s.lat, s.lon), s.type === 'popup' ? C.yellow : C.blue));
-    const build = (pick, material) => {
-      const pos = [], cols = [], c = new THREE.Color();
-      land.forEach((p, i) => {
-        const col = pick(i);
-        if (!col) return;
-        pos.push(p.x, p.y, p.z);
-        c.set(col); cols.push(c.r, c.g, c.b);
+    // 세계 매장 빛 번짐: 경위도를 망점 칸 단위로 바꿔 지도와 같은 방식으로 계산
+    const CELL = 0.68; // 지구본 망점 간격(도)
+    const srcs = [
+      ...WORLD.map(([lat, lon]) => ({ lat, lon, pop: 0 })),
+      ...STORES.map((st) => ({ lat: st.lat, lon: st.lon, pop: st.type === 'popup' ? 1 : 0 })),
+    ];
+    const gray = [], glow = [], glowCol = [];
+    for (const p of land) {
+      const lat = 90 - THREE.MathUtils.radToDeg(Math.acos(p.y / (R * 1.001)));
+      const lon = THREE.MathUtils.radToDeg(Math.atan2(p.z, -p.x)) - 180;
+      const cl = Math.cos(THREE.MathUtils.degToRad(lat));
+      const near = srcs.filter((q) => Math.abs(q.lat - lat) < 6).map((q) => {
+        let dl = lon - q.lon; dl -= Math.round(dl / 360) * 360;
+        return { u: ((lon - dl) * cl) / CELL, v: q.lat / CELL, pop: q.pop, k: 1 };
       });
+      const g = near.length ? glowAt((lon * cl) / CELL, lat / CELL, near, 2.4) : null;
+      gray.push(p);
+      if (g) { glow.push(p); const c = GLOW_COL.gray.clone().lerp(g[0], g[1]); glowCol.push(c.r, c.g, c.b); }
+    }
+    const pts = (list, cols, material, order) => {
       const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-      geo.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
-      this.globe.add(new THREE.Points(geo, material));
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(list.flatMap((p) => [p.x, p.y, p.z]), 3));
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(cols || list.flatMap(() => [GLOW_COL.gray.r, GLOW_COL.gray.g, GLOW_COL.gray.b]), 3));
+      const o = new THREE.Points(geo, material);
+      o.renderOrder = order;
+      this.globe.add(o);
     };
-    build((i) => !paint.has(i) && C.dot, this.dotMat);
-    build((i) => paint.get(i), this.storeDotMat);
+    pts(gray, null, this.dotMat, 0);
+    pts(glow, glowCol, this.storeDotMat, 1); // 매장 빛은 회색 망점 위에 겹쳐 그려서 서서히 나타나게
   }
 
   /** 지도 이미지의 망점을 그대로 지구본 위에 (정사영을 거꾸로 계산) → 확대 끝에서 지도와 점 하나하나가 겹침 */
@@ -292,9 +324,11 @@ export class StoresSection extends BaseSection {
     const p0 = THREE.MathUtils.degToRad(MAP.lat0), sp0 = Math.sin(p0), cp0 = Math.cos(p0);
     const pos = [], cols = [], c = new THREE.Color(C.dot);
     const half = data.step / 2;
+    this.koreaGrid = { step: data.step, r: data.r, cells: [] };
     for (const [j, ...runs] of data.rows) {
       for (let k = 0; k < runs.length; k += 2) {
         for (let i = runs[k]; i < runs[k] + runs[k + 1]; i++) {
+          this.koreaGrid.cells.push(i, j);
           const x = (half + i * data.step - MAP.cx) / MAP.r, y = (MAP.cy - half - j * data.step) / MAP.r;
           const rho = Math.hypot(x, y), cc = Math.asin(Math.min(1, rho));
           const lat = rho ? Math.asin(Math.cos(cc) * sp0 + (y * Math.sin(cc) * cp0) / rho) : p0;
@@ -308,6 +342,42 @@ export class StoresSection extends BaseSection {
     geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
     geo.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
     this.globe.add(new THREE.Points(geo, this.koreaMat));
+    this.mapKey = '';
+  }
+
+  /** 한반도 망점 지도를 캔버스에 그림 (매장 빛 번짐 포함). 바뀐 게 있을 때만 다시 그림 */
+  drawMap(srcs) {
+    const g = this.koreaGrid, cv = this.dom.mapCv;
+    if (!g || !this.mapAt) return;
+    const key = srcs.map((q) => `${q.k.toFixed(3)}:${(q.r || 1).toFixed(3)}`).join('|') + `|${this.vw}x${this.vh}`;
+    if (key === this.mapKey) return;
+    this.mapKey = key;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    if (cv.width !== Math.round(this.vw * dpr) || cv.height !== Math.round(this.vh * dpr)) {
+      cv.width = Math.round(this.vw * dpr); cv.height = Math.round(this.vh * dpr);
+    }
+    const x = cv.getContext('2d');
+    x.setTransform(dpr, 0, 0, dpr, 0, 0);
+    x.clearRect(0, 0, this.vw, this.vh);
+    const { k, cx, cy } = this.mapAt, half = g.step / 2, rad = g.r * k;
+    const col = new THREE.Color();
+    const live = srcs.filter((q) => q.k > 0);
+    const groups = new Map(); // 색별로 모아서 한 번에 그림
+    for (let n = 0; n < g.cells.length; n += 2) {
+      const i = g.cells[n], j = g.cells[n + 1];
+      const px = cx + (half + i * g.step - MAP.cx) * k, py = cy + (half + j * g.step - MAP.cy) * k;
+      if (px < -4 || py < -4 || px > this.vw + 4 || py > this.vh + 4) continue;
+      const hit = live.length ? glowAt(i, j, live) : null;
+      const style = hit ? `#${col.copy(GLOW_COL.gray).lerp(hit[0], hit[1]).getHexString()}` : C.dot;
+      if (!groups.has(style)) groups.set(style, []);
+      groups.get(style).push(px, py);
+    }
+    for (const [style, list] of groups) {
+      x.fillStyle = style;
+      x.beginPath();
+      for (let n = 0; n < list.length; n += 2) { x.moveTo(list[n] + rad, list[n + 1]); x.arc(list[n], list[n + 1], rad, 0, Math.PI * 2); }
+      x.fill();
+    }
   }
 
   /* ---------------- 매장 카드 ---------------- */
@@ -459,26 +529,24 @@ export class StoresSection extends BaseSection {
     this.camera.updateMatrixWorld();
     this.globeCenter.value.copy(this.tilt.position).applyMatrix4(this.camera.matrixWorldInverse); // 가장자리 흐림용
 
-    // ---- 한반도 지도: 확대되는 지구본 위 한반도 자리에 맞춰 붙어서 함께 커짐 ----
-    if (reveal > 0 && reveal < 1) {
-      this.globe.updateMatrixWorld(true);
-      const kp = latLonToVec3(KOREA.lat, KOREA.lon, R).applyMatrix4(this.globe.matrixWorld).project(this.camera);
-      const kx = (kp.x * 0.5 + 0.5) * this.vw, ky = (-kp.y * 0.5 + 0.5) * this.vh;
-      const nowPx = this.vh / 2 / ((camD - R * s) * t);
-      d.map.style.transform = `translate(${(kx - mx).toFixed(1)}px, ${(ky - my).toFixed(1)}px) scale(${(nowPx / endPx).toFixed(4)})`;
-    } else {
-      d.map.style.transform = '';
-    }
-    d.reveal.style.opacity = seg(reveal, 0.92, 1).toFixed(3); // 3D 한반도 망점과 똑같은 지도 이미지로 바꿔 끼움
+    // ---- 한반도 지도: 확대 끝에서 3D 한반도 망점과 똑같은 캔버스 지도로 바꿔 끼움 ----
+    d.reveal.style.opacity = reveal >= 1 ? '1' : '0';
     d.reveal.style.visibility = reveal > 0 && fam < 1 ? 'visible' : 'hidden';
 
     // ---- 평면 지도 (시안 4·5번) ----
     d.map.classList.toggle('is-on', pin > T.map[0] && pin < T.map[1]);
-    d.pins.forEach((b, i) => {
-      // 4번에서는 서울(강동) 핀 하나만, 5번에서 나머지가 차례로 꽂힘
-      const a = b.dataset.id === FIRST ? at(pin, T.first) : seg(pin, T.dim[0] + (i % 6) * 0.006, T.dim[0] + 0.03 + (i % 6) * 0.006);
+    // 4번에서는 서울(강동) 빛 하나만, 5번에서 나머지가 차례로 번짐. 마우스를 올린 매장은 더 넓게 번짐
+    const mapLiveNow = pin > T.dim[0] + 0.02 && pin < T.family[0] + 0.01;
+    this.hoverAmt = this.hoverAmt || {};
+    const srcs = d.pins.map((b, i) => {
+      const id = b.dataset.id;
+      const a = id === FIRST ? at(pin, T.first) : seg(pin, T.dim[0] + (i % 6) * 0.006, T.dim[0] + 0.03 + (i % 6) * 0.006);
+      const want = mapLiveNow && this.hovering && this.selected?.id === id ? 1 : 0;
+      const h = (this.hoverAmt[id] = lerp(this.hoverAmt[id] || 0, want, Math.min(1, dt * 10)));
       b.style.setProperty('--pop', ease.out(a).toFixed(3));
+      return { u: +b.dataset.u, v: +b.dataset.v, pop: b.classList.contains('is-popup') ? 1 : 0, k: ease.out(a), r: 1 + (GLOW.hover - 1) * ease.inOut(Math.min(1, h)) };
     });
+    if (reveal >= 1 && fam < 1) this.drawMap(srcs);
     // 매장 카드: 핀에 마우스를 올렸을 때만
     const mapLive = pin > T.dim[0] + 0.02 && pin < T.family[0] + 0.01;
     d.card.classList.toggle('is-on', mapLive && !!this.hovering);

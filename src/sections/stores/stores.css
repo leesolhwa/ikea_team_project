@@ -81,20 +81,19 @@
 .sec-stores .sf-map img { width: 100%; height: 100%; display: block; }
 .sec-stores .sf-dots { position: absolute; inset: 0; }
 
-/* 매장 = 지도 망점 하나를 칠한 점 (정규 매장 = 파랑, 팝업 매장 = 노랑) */
+/* 한반도 망점 지도 캔버스 (매장 빛 번짐 포함, JS 에서 그림) */
+.sec-stores .sf-mapcv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+/* 매장 버튼: 빛 번짐 한가운데의 보이지 않는 누름 영역 (정규 매장 = 파랑, 팝업 매장 = 노랑) */
 .sec-stores { --pc: #0c3494; }
 .sec-stores .is-popup { --pc: #ffc800; }
 .sec-stores .sf-pin {
-  --pop: 0; --s: 1;
-  /* 지도 망점과 같은 크기 (--dot 은 JS 에서 지도 배율에 맞춰 넣음) */
-  position: absolute; width: var(--dot, 5px); height: var(--dot, 5px); padding: 0; border: 0; border-radius: 50%; background: var(--pc); cursor: pointer;
-  opacity: var(--pop); transform: translate(-50%, -50%);
+  --pop: 0;
+  position: absolute; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer;
+  transform: translate(-50%, -50%); visibility: hidden;
 }
-.sec-stores .sf-pin::before { content: ''; position: absolute; inset: -14px; border-radius: 50%; } /* 누르기 쉬운 영역 */
+.sec-stores .sf-map.is-on .sf-pin { visibility: visible; }
 .sec-stores .sf-pin i { display: none; }
-/* 고른 매장: 크기는 그대로, 바깥에 가는 테두리만 */
-.sec-stores .sf-pin:hover, .sec-stores .sf-pin:focus-visible, .sec-stores .sf-pin.is-sel { outline: none; box-shadow: 0 0 0 2px var(--ivory), 0 0 0 3px var(--pc); }
-
+.sec-stores .sf-pin:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
 
 /* ---------- IKEA FAMILY ---------- */
 .sec-stores .sf-family {
