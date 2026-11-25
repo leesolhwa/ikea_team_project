@@ -96,8 +96,8 @@
 .sec-stores .sf-pin.is-popup { background-image: url('../../../assets/images/stores/pin-yellow.png'); }
 .sec-stores .sf-pin::before { content: ''; position: absolute; inset: -6px -10px 0; } /* 누르기 쉬운 영역 */
 .sec-stores .sf-pin i { /* 꽂힌 자리 그림자 */
-  position: absolute; left: 50%; bottom: -2px; width: 8px; height: 3px; margin-left: -1px; border-radius: 50%;
-  background: rgba(0, 12, 68, .22); filter: blur(.5px);
+  position: absolute; left: 50%; bottom: -1px; width: 6px; height: 3px; margin-left: -3px; border-radius: 50%;
+  background: rgba(0, 12, 68, .16); filter: blur(.6px);
 }
 .sec-stores .sf-pin:hover, .sec-stores .sf-pin:focus-visible, .sec-stores .sf-pin.is-sel { --s: 1.2; outline: none; }
 .sec-stores .sf-pin:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
