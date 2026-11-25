@@ -4,7 +4,7 @@ const rooms=[
   {id:'ikea-ps',name:'IKEA PS',ko:'컬렉션 전시실',page:'./src/sections/collection/collection.html',text:'거실 뒤편의 전시실입니다. 진열대 사이를 걸으며 가구의 높이와 간격을 살펴보고, 오른쪽 출입구로 중앙 통로에 들어갈 수 있습니다.',items:['벽면을 따라 놓인 오픈 선반','낮은 전시대 위의 의자와 조명']},
   {id:'3d-room',name:'3D room',ko:'침실',text:'중앙 통로에서 안쪽으로 들어온 침실입니다. 침대 발치에서 시선을 돌리면 헤드보드, 협탁, 수납장의 배치가 한눈에 들어옵니다.',items:['낮은 침대와 패브릭 침구','침대 옆 협탁과 조명']},
   {id:'store-family',name:'Store & Family',ko:'패밀리 라운지',text:'도면 오른쪽 앞에 자리한 라운지입니다. 데이베드와 독서등이 놓여 있고, 옆 출입구를 지나면 다이닝으로 이어지는 복도에 닿습니다.',items:['오른쪽 앞방에 놓인 데이베드','침대 옆 키 큰 독서등']},
-  {id:'restaurant',name:'Restaurant',ko:'키친 & 다이닝',text:'오른쪽 뒤편의 식탁과 주방입니다. 의자 사이와 조리대 앞을 오가며 식탁 위 펜던트와 벽면 수납장을 다른 각도로 볼 수 있습니다.',items:['여섯 자리가 있는 긴 식탁','벽면 조리대와 상부 수납장']}
+  {id:'restaurant',name:'Restaurant',ko:'키친 & 다이닝',page:'./src/sections/food/restaurant.html',text:'오른쪽 뒤편의 식탁과 주방입니다. 의자 사이와 조리대 앞을 오가며 식탁 위 펜던트와 벽면 수납장을 다른 각도로 볼 수 있습니다.',items:['여섯 자리가 있는 긴 식탁','벽면 조리대와 상부 수납장']}
 ];
 const world=$('world'),scene=document.querySelector('.scene'),caption=document.querySelector('.caption');
 const dialog=$('detail'),render=makeRenderer(world),doors=$('doors'),opening=$('opening');
