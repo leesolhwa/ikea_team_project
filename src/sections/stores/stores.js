@@ -79,7 +79,10 @@ const DOT = (() => {
   const g = c.getContext('2d');
   g.fillStyle = '#fff';
   g.beginPath(); g.arc(32, 32, 28, 0, Math.PI * 2); g.fill();
-  return new THREE.CanvasTexture(c);
+  const t = new THREE.CanvasTexture(c);
+  t.generateMipmaps = false; // 작게 그려도 마름모가 아닌 동그라미로
+  t.minFilter = THREE.LinearFilter;
+  return t;
 })();
 const byId = (id) => STORES.find((s) => s.id === id);
 const shortName = (s) => s.name.replace(/^이케아 (팝업 )?/, '');
@@ -239,7 +242,7 @@ export class StoresSection extends BaseSection {
 
     // 대륙 = 망점, 매장이 있는 자리의 점만 파랑(정규)·노랑(팝업)으로 칠함
     const mat = (size) => {
-      const m = new THREE.PointsMaterial({ size, sizeAttenuation: true, map: DOT, vertexColors: true, transparent: true, opacity: 0, depthWrite: false, alphaTest: 0.3 });
+      const m = new THREE.PointsMaterial({ size, sizeAttenuation: true, map: DOT, vertexColors: true, transparent: true, opacity: 0, depthWrite: false, alphaTest: 0.01 });
       // 지구본 가장자리로 갈수록 점을 배경색으로 (가장자리에 점이 몰려 진해지지 않게)
       m.onBeforeCompile = (sh) => {
         sh.uniforms.uCenter = this.globeCenter;
