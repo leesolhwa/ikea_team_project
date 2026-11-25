@@ -61,6 +61,8 @@
   opacity: 0; transform: translateY(12px); transition: opacity .35s, transform .35s; pointer-events: none;
 }
 .sec-stores .sf-card.is-on { opacity: 1; transform: none; pointer-events: auto; }
+.sec-stores .sf-card h3, .sec-stores .sf-card p { text-shadow: 0 0 6px var(--ivory), 0 0 12px var(--ivory), 0 0 18px var(--ivory); }
+.sec-stores .sf-card a { background: var(--ivory); }
 .sec-stores .sf-card h3 { margin: 0; font: 600 max(20px, calc(28 * var(--f))) / 1.2 var(--sans); letter-spacing: -0.05em; }
 .sec-stores .sf-card p { margin: 8px 0 0; font: 400 max(14px, calc(16 * var(--f))) / 1.4 var(--sans); letter-spacing: -0.05em; }
 .sec-stores .sf-card a {
@@ -101,9 +103,9 @@
   /* 가장자리 건물이 배경색으로 자연스럽게 사라지게 (회색 바닥 없음) */
   background: radial-gradient(ellipse 36% 46% at 49% 55%, rgba(252, 250, 246, 0) 55%, var(--ivory) 100%);
 }
-.sec-stores .sf-citypin { position: absolute; left: 0; top: 0; width: 2px; margin-left: -1px; background: var(--pc); }
+.sec-stores .sf-citypin { position: absolute; left: 0; top: 0; width: 3px; margin-left: -1.5px; background: var(--pc); }
 .sec-stores .sf-citypin::before {
-  content: ''; position: absolute; left: 50%; top: 0; width: 18px; height: 18px; border-radius: 50%; transform: translate(-50%, -50%);
+  content: ''; position: absolute; left: 50%; top: 0; width: 22px; height: 22px; border-radius: 50%; transform: translate(-50%, -50%);
   background: var(--pc); box-shadow: 0 0 0 4px var(--pg);
 }
 .sec-stores .sf-citypin::after { content: ''; position: absolute; left: 50%; bottom: -3px; width: 10px; height: 5px; border-radius: 50%; transform: translateX(-50%); background: var(--pg); }
@@ -126,7 +128,7 @@
 .sec-stores .sf-panels {
   position: absolute; inset: 0; z-index: 2; background: var(--ivory); transform: translateY(100%); will-change: transform;
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: calc(46 * var(--u));
-  padding: calc(128 * var(--v)) calc(115 * var(--u)) calc(60 * var(--v)); pointer-events: none;
+  padding: calc(128 * var(--v)) calc(115 * var(--u)) calc(60 * var(--v)); align-content: center; pointer-events: none;
 }
 .sec-stores .sf-panels.is-on { pointer-events: auto; }
 .sec-stores .sf-region { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: calc(22 * var(--v)) calc(14 * var(--u)); align-content: start; }
@@ -136,7 +138,7 @@
 }
 .sec-stores .sf-region h4::before { content: ''; width: 9px; height: 9px; border-radius: 50%; background: var(--pc); }
 .sec-stores .sf-panel { display: block; padding: 0; border: 0; background: none; text-align: left; color: var(--navy); cursor: pointer; font: inherit; }
-.sec-stores .sf-panel .img { position: relative; display: block; aspect-ratio: 600 / 640; max-height: calc(300 * var(--v)); margin: 0 auto; overflow: hidden; }
+.sec-stores .sf-panel .img { position: relative; display: block; aspect-ratio: 600 / 640; max-height: calc(330 * var(--v)); margin: 0 auto; overflow: hidden; }
 .sec-stores .sf-panel img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .6s var(--ease, ease); }
 .sec-stores .sf-panel:hover img, .sec-stores .sf-panel:focus-visible img { transform: scale(1.04); }
 .sec-stores .sf-panel .pin { position: absolute; left: 50%; top: var(--top); width: 2px; height: calc(50% - var(--top)); margin-left: -1px; background: var(--pc); }

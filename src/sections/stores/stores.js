@@ -44,7 +44,7 @@ const EUROPE = { lat: 44, lon: 16 };   // 시안 3번 화면에서 정면에 보
 const FIRST = 'gangdong';              // 시안 4번 화면: 서울에 핀 하나
 const DEFAULT = 'pangyo';              // 시안 5번 화면: 처음 보이는 매장 카드
 const C = { ivory: '#fcfaf6', line: '#cfc9be', blue: '#0c3494', yellow: '#ffc800', bld: '#fbfaf6' };
-const CITY = { dist: 3000, polar: 57, az: 4, pinH: 230 };   // 동네 3D 카메라 (m, 도)
+const CITY = { dist: 3000, polar: 57, az: 4, pinH: 300 };   // 동네 3D 카메라 (m, 도)
 const PANEL_PIN = { gangdong: 0.407, goyang: 0.407 };      // 패널 이미지 속 핀 머리 높이(기본 0.371)
 const REGIONS = [
   { name: '수도권', ids: ['gwangmyeong', 'goyang', 'gangdong', 'pangyo', 'songdo', 'giheung'] },
@@ -268,7 +268,7 @@ export class StoresSection extends BaseSection {
     headGeo.setAttribute('position', new THREE.Float32BufferAttribute(heads, 3));
     headGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
     this.headMat = new THREE.PointsMaterial({
-      size: 0.034, sizeAttenuation: true, map: new THREE.CanvasTexture(dot), vertexColors: true,
+      size: 0.042, sizeAttenuation: true, map: new THREE.CanvasTexture(dot), vertexColors: true,
       transparent: true, opacity: 0, depthWrite: false, alphaTest: 0.02,
     });
     this.globe.add(new THREE.Points(headGeo, this.headMat));
@@ -429,7 +429,7 @@ export class StoresSection extends BaseSection {
     this.ovalMat.opacity = wire * (1 - grow);
     const pinsUp = ease.out(seg(pin, T.grow[0] + 0.03, T.grow[1]));
     this.headMat.opacity = 0.62 * pinsUp;
-    this.headMat.size = 0.034 * pinsUp;
+    this.headMat.size = 0.042 * pinsUp;
     this.stemMat.opacity = 0.35 * pinsUp;
     this.stems.scale.setScalar(1);
 
@@ -441,7 +441,7 @@ export class StoresSection extends BaseSection {
       const orbit = at(pin, T.orbit);
       const pol = THREE.MathUtils.degToRad(lerp(18, CITY.polar, cityIn));
       const az = THREE.MathUtils.degToRad(CITY.az + orbit * 18 + Math.sin(time * 0.15) * 1.5);
-      const dist = CITY.dist * lerp(1.6, 1, cityIn);
+      const dist = CITY.dist * Math.max(1, 1.5 / (this.vw / this.vh)) * lerp(1.6, 1, cityIn); // 세로로 긴 화면이면 조금 멀리
       this.camera.position.set(dist * Math.sin(pol) * Math.sin(az), dist * Math.cos(pol), dist * Math.sin(pol) * Math.cos(az));
       this.camera.lookAt(0, 0, 0);
       this.camera.near = 10; this.camera.far = 20000;
