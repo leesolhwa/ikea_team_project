@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IKEA Restaurant</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;600&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="restaurant.css">
+<script>
+  // m: 모바일 / d: 데스크톱 / flat: 화면 고정 없이 스와이프로 보는 모드
+  (function () {
+    var c = document.documentElement.classList;
+    var m = matchMedia('(max-width: 767px)').matches;
+    c.add(m ? 'm' : 'd');
+    if (m || matchMedia('(prefers-reduced-motion: reduce)').matches) c.add('flat');
+  })();
+</script>
+</head>
+<body>
+
+<header class="topbar" data-theme="light">
+  <a class="exit" href="../../../index.html" aria-label="메인으로 나가기">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="round"><path d="M17.5007 4.66797H5.83398V21.0013C5.83398 21.6201 6.07982 22.2136 6.5174 22.6512C6.95499 23.0888 7.54848 23.3346 8.16732 23.3346H17.5007M18.6673 10.5013L22.1673 14.0013L18.6673 17.5013M22.1673 14.0013H10.5007"/></svg>
+  </a>
+  <nav>
+    <a href="#" style="--x:16.6667%">About</a>
+    <a href="#" style="--x:33.3333%">Collection</a>
+    <a href="#" style="--x:50%">3D Room</a>
+    <a href="#" style="--x:66.6667%">S&amp;F_store</a>
+    <a href="#" style="--x:83.3333%" aria-current="page">Cafe</a>
+  </nav>
+  <i class="line"></i><i class="line progress"></i>
+</header>
+
+<i class="dot" aria-hidden="true"></i>
+
+<main>
+  <!-- 1. 인트로 -->
+  <div class="intro-pin"><section class="scene intro" data-theme="light">
+    <div class="art">
+      <svg class="lines" viewBox="0 0 1920 1000" aria-hidden="true">
+        <path class="ray" d="M702 0L145 1000"/><path class="ray" d="M1203 0L1792 1000"/><path class="light glow"/><path class="light glow"/><path class="light"/><path class="light"/>
+        <defs><linearGradient id="trail0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".6" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff"/></linearGradient><linearGradient id="trail1" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".6" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff"/></linearGradient></defs>
+      </svg>
+      <h1 class="display">Good Food for Everyone.</h1>
+      <p class="lead">스웨덴의 전통적인 맛부터 일상 속 특별한 한 끼까지.<br>부담 없는 가격으로 즐기는 이케아의 다양한 메뉴를 만나보세요.</p>
+      <div class="mini" aria-hidden="true">
+        <svg class="arrow" width="23" height="30" viewBox="0 0 23 30" fill="none" stroke="currentColor" stroke-width="2"><path d="M11.5 0v27M1 17l10.5 10.5L22 17"/></svg>
+        <span style="left:6px;top:49px;--r:-36deg">RT</span><span style="left:35px;top:70px;--r:-72deg">BO</span><span style="left:72px;top:70px;--r:-108deg">CE</span><span style="left:101px;top:49px;--r:-144deg">FM</span>
+      </div>
+    </div>
+  </section></div>
+
+  <!-- 2. 990원 아침식사 -->
+  <div class="bf-pin"><section class="scene breakfast" data-theme="dark">
+    <div class="art">
+      <svg class="lines" viewBox="0 0 1920 1000" aria-hidden="true">
+        <path class="edge" d="M145.8 -500V1500"/><path class="edge" d="M1791 -500V1500"/><path class="light"/><path class="light"/>
+        <defs><linearGradient id="table0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#000c44" stop-opacity="0"/><stop offset=".6" stop-color="#000c44" stop-opacity=".22"/><stop offset="1" stop-color="#000c44"/></linearGradient><linearGradient id="table1" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#000c44" stop-opacity="0"/><stop offset=".6" stop-color="#000c44" stop-opacity=".22"/><stop offset="1" stop-color="#000c44"/></linearGradient></defs>
+        <path class="edge cutline"/><path d="M332 -500V1500"/><path d="M1204 -500V1500"/><path d="M-1000 298H2920"/>
+      </svg>
+      <div class="dish"><img loading="lazy" src="../../../assets/images/food/restaurant/breakfast.png" data-full="../../../assets/images/food/restaurant/breakfast-full.png" alt="당근과 달걀을 올린 호밀빵 아침식사"></div>
+      <div class="copy">
+        <p class="price"><span class="num">990</span><span class="won">원</span></p>
+        <h2>아침식사가<br>출시되었어요!</h2>
+        <p class="note">레스토랑 영업 시작 후 1시간 동안 판매됩니다.</p>
+        <a class="btn" href="https://www.ikea.com/kr/ko/food/salesareas/restaurant/PRF13837037/" target="_blank" rel="noopener">View more</a>
+      </div>
+    </div>
+  </section></div>
+
+  <!-- 3~6. 메뉴 4막 (데스크톱: 화면 고정) -->
+  <section class="pin">
+    <div class="stage" data-theme="light">
+      <div class="splash" style="background:#000622"></div>
+      <div class="splash" style="background:#0c3494"></div>
+      <div class="splash" style="background:#fad917"></div>
+      <div class="splash" style="background:#fcfaf6"></div>
+      <div class="art">
+        <svg class="lines" viewBox="0 0 1920 1000" aria-hidden="true">
+          <path d="M145.8 -500V1500"/><path d="M1791 -500V1500"/><g class="leave"><path d="M-1000 500H1254"/><path d="M958.5 -500L2138 1500"/></g>
+        </svg>
+        <div class="cut">
+          <img class="receipt" src="../../../assets/images/food/restaurant/receipt.png" alt="">
+          <div class="track"></div>
+        </div>
+        <h2 class="title">Swedish <strong></strong></h2>
+        <i class="point"></i>
+        <div class="caption">
+          <p class="name"><span></span><i></i><span></span></p>
+          <p class="desc"></p>
+        </div>
+        <div class="dial">
+          <button style="left:54.6px;top:-200px;--r:-80deg" aria-label="레스토랑">RT</button>
+          <button style="left:149.6px;top:-143.5px;--r:-45deg" aria-label="비스트로">BO</button>
+          <button style="left:204.3px;top:-35px;--r:-10deg" aria-label="카페">CE</button>
+          <button style="left:191.6px;top:78px;--r:15deg" aria-label="푸드마켓">FM</button>
+          <div class="hand"><b></b></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3~6. 메뉴 4막 (모바일 · 모션 줄이기: 스와이프) -->
+  <div class="acts"></div>
+
+  <div class="tail">
+    <img class="receipt" src="../../../assets/images/food/restaurant/receipt.png" alt="">
+    <!-- 7. 흩어진 접시 -->
+    <section class="scene scatter" data-theme="dark">
+      <div class="art rules" aria-hidden="true">
+        <svg class="lines" viewBox="0 0 1920 1238"><path d="M145.8 0V1238"/><path d="M1791 0V1238"/></svg>
+        <i class="mid"></i>
+      </div>
+      <div class="art dishes">
+        <img class="plate" data-s="25" style="left:503.4px;top:100.2px" src="../../../assets/images/food/restaurant/rt3.jpg" alt="리치 토마토파스타">
+        <img class="plate" data-s="75" style="left:959.5px;top:341.8px" src="../../../assets/images/food/restaurant/bo4.jpg" alt="달라호스 십원빵">
+        <img class="plate" data-s="50" style="left:430.3px;top:397.2px" src="../../../assets/images/food/restaurant/ce3.jpg" alt="아이스 제주 말차 라떼">
+        <img class="plate" data-s="80" style="left:503.4px;top:611.6px" src="../../../assets/images/food/restaurant/fm5.jpg" alt="무화과 로프">
+        <img class="plate" data-s="45" style="left:1140.2px;top:208px" src="../../../assets/images/food/restaurant/ce5.jpg" alt="크림치즈 프레즐">
+        <img class="plate" data-s="65" style="left:1081.7px;top:803.6px" src="../../../assets/images/food/restaurant/rt1.jpg" alt="단호박죽">
+      </div>
+    </section>
+
+    <!-- 8. 엔딩 -->
+    <section class="scene ending" data-theme="dark">
+      <div class="art">
+        <svg class="lines" viewBox="0 0 1920 1000" aria-hidden="true">
+          <path d="M150 0L710 1000"/><path d="M1786 0L1197 1000"/>
+          <path d="M-1000 500H2920"/><path d="M-1000 200.5H2920"/><path d="M-1000 802.4H2920"/><path d="M333.6 0V1000"/><path d="M674.3 0V1000"/>
+        </svg>
+        <div class="copy">
+          <h2 class="display">See You at IKEA!</h2>
+          <p>맛있는 한 끼로 채워가는 더 나은 일상.<br>부담 없는 가격으로 즐기는 맛있는 행복.</p>
+          <p class="strong">가까운 이케아에서 만나요!</p>
+          <a class="btn" href="https://www.ikea.com/kr/ko/stores/restaurant/#9d9ae020-a1c8-11f1-81b1-dd028b399156" target="_blank" rel="noopener">View more</a>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js"></script>
+<script src="restaurant.js"></script>
+</body>
+</html>
