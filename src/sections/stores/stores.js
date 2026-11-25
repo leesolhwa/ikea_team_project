@@ -301,7 +301,7 @@ export class StoresSection extends BaseSection {
         let dl = lon - q.lon; dl -= Math.round(dl / 360) * 360;
         return { u: ((lon - dl) * cl) / CELL, v: q.lat / CELL, pop: q.pop, k: 1 };
       });
-      const g = near.length ? glowAt((lon * cl) / CELL, lat / CELL, near, 2.4) : null;
+      const g = near.length ? glowAt((lon * cl) / CELL, lat / CELL, near, 1.2) : null; // 지구본은 매장이 많아 좁게
       gray.push(p);
       if (g) { glow.push(p); const c = GLOW_COL.gray.clone().lerp(g[0], g[1]); glowCol.push(c.r, c.g, c.b); }
     }
