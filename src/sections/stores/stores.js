@@ -415,9 +415,9 @@ export class StoresSection extends BaseSection {
     this.ovalMat.opacity = wire * (1 - grow);
     // 핀이 지구본 안쪽에서 쑥 꽂혀 나옴
     const pinsUp = ease.out(seg(pin, T.grow[0] + 0.03, T.grow[1]));
-    this.storeDotMat.opacity = pinsUp * globeFade;
+    this.storeDotMat.opacity = pinsUp * (1 - ease.inOut(seg(reveal, 0.35, 0.8))); // 세계 매장 점은 조금 먼저 사라짐
     // 확대하는 동안 점이 커다랗게 번지지 않게: 화면에서 점 크기를 거의 그대로 (조금씩만 커짐)
-    const grow2 = Math.pow((camD - R) / (this.D0 * 0.86 - R), 0.85);
+    const grow2 = Math.pow((camD - R) / (this.D0 * 0.86 - R), 0.6);
     this.dotMat.size = 0.065 * Math.min(1, grow2);
     this.storeDotMat.size = 0.15 * Math.min(1, grow2);
 
