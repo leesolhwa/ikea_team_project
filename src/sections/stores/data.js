@@ -1,8 +1,7 @@
 // STORE & FAMILY 섹션 데이터.
 // 매장 좌표는 OpenStreetMap(Nominatim) 검색 결과, 주소는 언론 보도·매장 안내를 기준으로 적었습니다(2026-11 기준).
 // 팝업은 기간이 끝나면 이 목록에서 해당 줄만 지우면 됩니다. 주소·기간은 올리기 전에 이케아 공식 사이트에서 한 번 더 확인하세요.
-//   type: 'store' = 정식 매장(빨간 핀), 'popup' = 팝업(노란 핀)
-//   osm : data/buildings.json 의 건물 묶음 키 (매장 주변 반경 약 1km)
+//   type: 'store' = 정식 매장(파란 점), 'popup' = 팝업(노란 점)
 export const STORES = [
   { id: 'gwangmyeong', type: 'store', name: '이케아 광명점', addr: '경기 광명시 일직로 17', lat: 37.42436, lon: 126.88279, url: 'https://www.ikea.com/kr/ko/stores/gwangmyeong/' },
   { id: 'goyang', type: 'store', name: '이케아 고양점', addr: '경기 고양시 덕양구 권율대로 420', lat: 37.6294, lon: 126.86301, url: 'https://www.ikea.com/kr/ko/stores/goyang/' },

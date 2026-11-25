@@ -70,30 +70,25 @@
 }
 .sec-stores .sf-card a:hover, .sec-stores .sf-card a:focus-visible { background: var(--navy); color: var(--ivory); outline: none; }
 
-/* 매장 점 (시안 Rectangle 176 / 189) */
-.sec-stores .sf-dots { z-index: 3; }
+/* ---------- 한반도 지도 (시안 image 361 / 362, 1014×984 @ x429 y96) ---------- */
+.sec-stores .sf-map {
+  position: absolute; z-index: 1; margin: 0; left: calc(936 * var(--u) - 507 * var(--f)); top: calc(96 * var(--v));
+  width: calc(1014 * var(--f)); aspect-ratio: 1014 / 984; opacity: 0; pointer-events: none;
+}
+.sec-stores .sf-map.is-on { pointer-events: auto; }
+.sec-stores .sf-map img { width: 100%; height: 100%; display: block; }
+.sec-stores .sf-dots { position: absolute; inset: 0; }
+/* 매장 점: 정식 = 파랑(Rectangle 176), 팝업 = 노랑(Rectangle 189). 마우스를 올리면 색은 그대로 점만 커짐 */
 .sec-stores .sf-dots button {
-  position: absolute; left: 0; top: 0; width: max(6px, calc(7 * var(--f))); height: max(6px, calc(7 * var(--f)));
-  margin: calc(max(6px, calc(7 * var(--f))) / -2); padding: 0; border: 0; border-radius: 0;
-  background: #0c3494; box-shadow: 0 0 10px 1px #6190ff; cursor: pointer; opacity: 0; pointer-events: none; transition: opacity .3s, background .2s, box-shadow .2s;
+  --pop: 0; --s: 1;
+  position: absolute; width: max(6px, calc(7 * var(--f))); height: max(6px, calc(7 * var(--f))); padding: 0; border: 0; border-radius: 0;
+  background: #0c3494; box-shadow: 0 0 10px 1px #6190ff; cursor: pointer;
+  transform: translate(-50%, -50%) scale(calc(var(--pop) * var(--s))); transition: box-shadow .25s;
 }
+.sec-stores .sf-dots button.is-popup { background: #ffc800; box-shadow: 0 0 10px 1px #ffdb00; }
 .sec-stores .sf-dots button::before { content: ''; position: absolute; inset: -12px; }
-.sec-stores .sf-dots button.is-on { opacity: 1; pointer-events: auto; }
-.sec-stores .sf-dots button.is-sel { background: #ffc800; box-shadow: 0 0 10px 1px #ffdb00; }
-.sec-stores .sf-dots button:focus-visible { outline: 2px solid var(--navy); outline-offset: 4px; }
-.sec-stores .sf-back {
-  position: absolute; z-index: 4; left: calc(115 * var(--u)); top: calc(140 * var(--v)); min-height: 44px; padding: 0 16px;
-  border: 1px solid var(--navy); background: var(--ivory); color: var(--navy); cursor: pointer;
-  font: 400 14px/1 var(--display); text-transform: uppercase; letter-spacing: -0.03em;
-  opacity: 0; pointer-events: none; transition: opacity .3s;
-}
-.sec-stores .sf-back.is-on { opacity: 1; pointer-events: auto; }
-.sec-stores .sf-back:hover, .sec-stores .sf-back:focus-visible { background: var(--navy); color: var(--ivory); outline: none; }
-.sec-stores .sf-attr {
-  position: absolute; z-index: 4; right: 20px; bottom: 16px; font: 400 11px/1 var(--sans); color: #8a8a86;
-  opacity: 0; transition: opacity .4s;
-}
-.sec-stores .sf-attr a { color: inherit; pointer-events: auto; }
+.sec-stores .sf-dots button:hover, .sec-stores .sf-dots button:focus-visible, .sec-stores .sf-dots button.is-sel { --s: 1.7; box-shadow: 0 0 16px 4px #6190ff; outline: none; }
+.sec-stores .sf-dots button.is-popup:hover, .sec-stores .sf-dots button.is-popup:focus-visible, .sec-stores .sf-dots button.is-popup.is-sel { box-shadow: 0 0 16px 4px #ffdb00; }
 
 /* ---------- IKEA FAMILY ---------- */
 .sec-stores .sf-family {
@@ -101,7 +96,6 @@
   transform: translateY(100%); will-change: transform; pointer-events: none;
 }
 .sec-stores .sf-family.is-on { pointer-events: auto; }
-.sec-stores .sf-fam-inner { position: absolute; inset: 0; will-change: transform; }
 .sec-stores .sf-offers {
   position: absolute; left: calc(260 * var(--u)); top: calc(244 * var(--v)); margin: 0;
   font: 400 calc(24 * var(--f)) / 1.2 var(--sans); letter-spacing: -0.05em; text-transform: uppercase;
@@ -123,17 +117,14 @@
   position: absolute; left: calc(1002 * var(--u)); top: calc(497 * var(--v)); margin: 0; padding: 0; list-style: none;
   display: grid; gap: calc(10 * var(--f));
 }
-.sec-stores .sf-list li { font-weight: 200; will-change: transform; transition: font-weight .35s; cursor: default; }
-.sec-stores .sf-list li:first-child { font-weight: 400; }
-.sec-stores .sf-list li:hover { font-weight: 600; }
+.sec-stores .sf-list li { font-weight: 200; will-change: transform; }
 
 @media (max-width: 760px) {
   .sec-stores { --u: calc(100vw / 1100); --f: calc(100vw / 1100); }
   .sec-stores .sf-nav button { font-size: 10px; }
   .sec-stores .sf-card { left: 20px; right: 20px; width: auto; top: auto; bottom: 90px; }
-  .sec-stores .sf-back { left: 20px; }
   .sec-stores .sf-list { left: calc(500 * var(--u)); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .sec-stores .sf-card, .sec-stores .sf-list li { transition: none; }
+  .sec-stores .sf-card { transition: none; }
 }
