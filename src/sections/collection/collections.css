@@ -408,10 +408,10 @@
 }
 #photo-cursor::before {
   content: ""; position: absolute; inset: 0; border-radius: inherit;
-  backdrop-filter: url(#cursor-yellow-match);
+  backdrop-filter: url(#cursor-color-match);
 }
 #photo-cursor span { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; white-space: nowrap; }
-@supports (backdrop-filter: url(#cursor-yellow-match)) {
+@supports (backdrop-filter: url(#cursor-color-match)) {
   #photo-cursor { background: transparent; }
 }
 body.photo-hover, body.photo-hover .photo-mask * { cursor: none !important; }
