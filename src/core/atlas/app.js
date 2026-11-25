@@ -249,14 +249,15 @@ function syncDetail(){
 function enter(e,dest){
   e.preventDefault();
   if(busy||position!==destination||dialog.open||dest>=rooms.length)return;
+  const page=rooms[dest].page;
   const finish=()=>{
     // 별도 상세페이지(page)가 있는 방은 그 페이지로 이동합니다.
-    if(rooms[dest].page){location.href=rooms[dest].page;return}
+    if(page){location.href=page;return}
     history.pushState({roomTour:{index}},'','#'+rooms[dest].id);
     syncDetail();
   };
   if(reduced.matches){finish();return}
-  busy=true;preparePage(dest);schedule();
+  busy=true;if(!page)preparePage(dest);schedule();
   const rect=e.currentTarget.getBoundingClientRect();
   const x=e.detail?e.clientX:rect.left+rect.width/2;
   const y=e.detail?e.clientY:rect.top+rect.height/2;
@@ -266,6 +267,8 @@ function enter(e,dest){
   activeMotion=wipe.animate([{clipPath:circle(4),offset:0},{clipPath:circle(4),offset:.1},{clipPath:circle(radius),offset:1}],
     {duration:1100,easing:'cubic-bezier(.5,0,.28,1)',fill:'both'});
   activeMotion.onfinish=()=>{
+    // 별도 페이지가 있는 방은 예전 상세 화면을 띄우지 않고 원형 전환이 끝나면 바로 이동합니다.
+    if(page){finish();return}
     // Removing the circular clip leaves the detail background beneath the page.
     activeMotion.cancel();
     dialog.inert=true;dialog.setAttribute('data-preview','');dialog.scrollTop=0;
