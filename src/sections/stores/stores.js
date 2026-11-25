@@ -16,6 +16,7 @@ const FILES = {
   land: 'assets/images/stores/globe-land.png',     // 지구본 대륙 판정용 (Natural Earth, 화면에는 안 보임)
   korea: 'assets/images/stores/korea-map.png',     // 한반도 망점 지도 (해안선 단순화, 안쪽 큰 점 → 해안 작은 점)
   family: 'assets/images/stores/family-billy.jpg', // 시안 FAMILY 사진
+  dots: new URL('./data/korea-dots.json', import.meta.url).href, // 한반도 망점 목록 (지도 이미지와 같은 점)
 };
 
 /** 스크롤 구간 (pin 0~1) */
@@ -93,8 +94,8 @@ export class StoresSection extends BaseSection {
 
   template() {
     const pins = STORES.map((s) => {
-      // 지도 망점(간격 9)과 같은 칸에 맞춰 그 점을 칠한 것처럼
-      const [x, y] = mapXY(s.lat, s.lon).map((v) => 4 + Math.round((v - 4) / 9) * 9);
+      // 지도 망점(간격 6)과 같은 칸에 맞춰 그 점을 칠한 것처럼
+      const [x, y] = mapXY(s.lat, s.lon).map((v) => 3 + Math.round((v - 3) / 6) * 6);
       return `<button type="button" class="sf-pin${s.type === 'popup' ? ' is-popup' : ''}" data-id="${s.id}" aria-label="${s.name} 매장 정보 보기"
         style="left:${((x / MAP.w) * 100).toFixed(3)}%;top:${((y / MAP.h) * 100).toFixed(3)}%"><i></i></button>`;
     }).join('');
@@ -212,7 +213,7 @@ export class StoresSection extends BaseSection {
 
     // 대륙 = 망점, 매장이 있는 자리의 점만 파랑(정규)·노랑(팝업)으로 칠함
     const mat = (size) => {
-      const m = new THREE.PointsMaterial({ size, sizeAttenuation: true, map: DOT, vertexColors: true, transparent: true, opacity: 0, depthWrite: false, alphaTest: 0.01 });
+      const m = new THREE.PointsMaterial({ size, sizeAttenuation: false, map: DOT, vertexColors: true, transparent: true, opacity: 0, depthWrite: false, alphaTest: 0.01 });
       // 지구본 가장자리로 갈수록 점을 배경색으로 (가장자리에 점이 몰려 진해지지 않게)
       m.onBeforeCompile = (sh) => {
         sh.uniforms.uCenter = this.globeCenter;
@@ -227,9 +228,12 @@ export class StoresSection extends BaseSection {
       return m;
     };
     this.globeCenter = { value: new THREE.Vector3() };
-    this.dotMat = mat(0.065);
-    this.storeDotMat = mat(0.065); // 매장 점 = 망점과 같은 크기
+    // 점 크기는 화면 px (모든 점 같은 크기, 매장 점도 같은 크기)
+    this.dotMat = mat(2);
+    this.storeDotMat = mat(2);
+    this.koreaMat = mat(1); // 확대할 때 나타나는 한반도 망점 (지도 이미지와 같은 점)
     this.buildDots();
+    this.buildKoreaDots();
   }
 
   /** 육지 위에 고르게 점을 뿌리고 (피보나치 구), 매장과 가장 가까운 점을 칠함 */
@@ -248,7 +252,7 @@ export class StoresSection extends BaseSection {
       return px[(y * cv.width + x) * 4] < 238;
     };
     const land = [];
-    const N = 26000, ga = Math.PI * (3 - Math.sqrt(5));
+    const N = 90000, ga = Math.PI * (3 - Math.sqrt(5));
     for (let i = 0; i < N; i++) {
       const y = 1 - (2 * (i + 0.5)) / N, th = ga * i;
       const lat = THREE.MathUtils.radToDeg(Math.asin(y));
@@ -279,6 +283,31 @@ export class StoresSection extends BaseSection {
     };
     build((i) => !paint.has(i) && C.dot, this.dotMat);
     build((i) => paint.get(i), this.storeDotMat);
+  }
+
+  /** 지도 이미지의 망점을 그대로 지구본 위에 (정사영을 거꾸로 계산) → 확대 끝에서 지도와 점 하나하나가 겹침 */
+  async buildKoreaDots() {
+    let data;
+    try { data = await (await fetch(FILES.dots)).json(); } catch (err) { console.warn('[stores] 한반도 망점을 불러오지 못했습니다', err); return; }
+    const p0 = THREE.MathUtils.degToRad(MAP.lat0), sp0 = Math.sin(p0), cp0 = Math.cos(p0);
+    const pos = [], cols = [], c = new THREE.Color(C.dot);
+    const half = data.step / 2;
+    for (const [j, ...runs] of data.rows) {
+      for (let k = 0; k < runs.length; k += 2) {
+        for (let i = runs[k]; i < runs[k] + runs[k + 1]; i++) {
+          const x = (half + i * data.step - MAP.cx) / MAP.r, y = (MAP.cy - half - j * data.step) / MAP.r;
+          const rho = Math.hypot(x, y), cc = Math.asin(Math.min(1, rho));
+          const lat = rho ? Math.asin(Math.cos(cc) * sp0 + (y * Math.sin(cc) * cp0) / rho) : p0;
+          const lon = THREE.MathUtils.degToRad(MAP.lon0) + Math.atan2(x * Math.sin(cc), rho * Math.cos(cc) * cp0 - y * Math.sin(cc) * sp0);
+          const v = latLonToVec3(THREE.MathUtils.radToDeg(lat), THREE.MathUtils.radToDeg(lon), R * 1.0015);
+          pos.push(v.x, v.y, v.z); cols.push(c.r, c.g, c.b);
+        }
+      }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+    this.globe.add(new THREE.Points(geo, this.koreaMat));
   }
 
   /* ---------------- 매장 카드 ---------------- */
@@ -329,7 +358,7 @@ export class StoresSection extends BaseSection {
       transformOrigin: `${(MAP.cx / MAP.w) * 100}% ${(MAP.cy / MAP.h) * 100}%`,
     });
     this.mapAt = { k, cx, cy };
-    this.dom.map.style.setProperty('--dot', `${(2.6 * 2 * k).toFixed(2)}px`); // 지도 망점 지름과 같게
+    this.dom.map.style.setProperty('--dot', `${(1.5 * 2 * k).toFixed(2)}px`); // 지도 망점 지름과 같게
   }
 
   /* ---------------- 매 프레임 ---------------- */
@@ -410,17 +439,18 @@ export class StoresSection extends BaseSection {
     this.face.position.copy(this.tilt.position);
     this.face.scale.setScalar(s / Math.sqrt(Math.max(0.05, 1 - ((R * s) / camD) ** 2))); // 원근 보정
 
-    const globeFade = 1 - ease.inOut(seg(reveal, 0.55, 0.95)); // 확대 끝에서 지구본 망점 → 지도 망점
-    this.dotMat.opacity = grow * globeFade;
+    const worldFade = 1 - ease.inOut(seg(reveal, 0.3, 0.65)); // 확대하며 세계 망점은 사라지고
+    this.dotMat.opacity = grow * worldFade;
+    this.koreaMat.opacity = ease.inOut(seg(reveal, 0.08, 0.45)); // 한반도 촘촘한 망점이 나타남
     this.rimMat.opacity = wire * (1 - reveal);
     this.ovalMat.opacity = wire * (1 - grow);
     // 핀이 지구본 안쪽에서 쑥 꽂혀 나옴
     const pinsUp = ease.out(seg(pin, T.grow[0] + 0.03, T.grow[1]));
-    this.storeDotMat.opacity = pinsUp * (1 - ease.inOut(seg(reveal, 0.35, 0.8))); // 세계 매장 점은 조금 먼저 사라짐
-    // 확대하는 동안 점이 커다랗게 번지지 않게: 화면에서 점 크기를 거의 그대로 (조금씩만 커짐)
-    const grow2 = Math.pow((camD - R) / (this.D0 * 0.86 - R), 0.6);
-    this.dotMat.size = 0.065 * Math.min(1, grow2);
-    this.storeDotMat.size = 0.065 * Math.min(1, grow2);
+    this.storeDotMat.opacity = pinsUp * worldFade;
+    // 점 크기 (화면 px): 세계 망점은 확대하며 조금 커지고, 한반도 망점은 확대 비율 그대로 커져 끝에서 지도 점과 같아짐
+    const zoomNow = this.vh / 2 / ((camD - R * s) * t) / endPx;   // 확대 끝 대비 지금 배율
+    this.dotMat.size = this.storeDotMat.size = 2 * (1 + reveal * 0.8);
+    this.koreaMat.size = Math.max(0.6, 1.5 * 2 * mk * zoomNow);
 
     this.camera.position.set(0, 0, camD);
     this.camera.lookAt(0, 0, 0);
@@ -439,11 +469,10 @@ export class StoresSection extends BaseSection {
     } else {
       d.map.style.transform = '';
     }
-    d.reveal.style.opacity = ease.inOut(seg(reveal, 0.45, 0.9)).toFixed(3);
+    d.reveal.style.opacity = seg(reveal, 0.92, 1).toFixed(3); // 3D 한반도 망점과 똑같은 지도 이미지로 바꿔 끼움
     d.reveal.style.visibility = reveal > 0 && fam < 1 ? 'visible' : 'hidden';
 
     // ---- 평면 지도 (시안 4·5번) ----
-    d.mapImg.style.opacity = lerp(1, 0.6, ease.inOut(at(pin, T.dim)));
     d.map.classList.toggle('is-on', pin > T.map[0] && pin < T.map[1]);
     d.pins.forEach((b, i) => {
       // 4번에서는 서울(강동) 핀 하나만, 5번에서 나머지가 차례로 꽂힘
