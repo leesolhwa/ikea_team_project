@@ -82,30 +82,25 @@
 .sec-stores .sf-map img { width: 100%; height: 100%; display: block; }
 .sec-stores .sf-dots { position: absolute; inset: 0; }
 
-/* 매장 핀: 지도에 꽂힌 압정 (동그란 머리 + 은색 바늘 + 바닥 그림자). 정규 매장 = 파랑, 팝업 매장 = 노랑 */
-.sec-stores { --pc: #0c3494; --pl: #3d64c4; --pd: #071f5e; }
-.sec-stores .is-popup { --pc: #ffc800; --pl: #ffdb4d; --pd: #d9a300; }
+/* 매장 핀: 지구본 핀과 같은 3D 압정을 미리 렌더링한 이미지 (pin-blue / pin-yellow, 바늘 끝 = 이미지 아래 가운데)
+   정규 매장 = 파랑, 팝업 매장 = 노랑 */
+.sec-stores { --pc: #0c3494; }
+.sec-stores .is-popup { --pc: #ffc800; }
 .sec-stores .sf-pin {
   --pop: 0; --s: 1;
-  position: absolute; width: 28px; height: 42px; padding: 0; border: 0; background: none; cursor: pointer;
+  position: absolute; width: 16px; height: 58px; padding: 0; border: 0; cursor: pointer;
+  background: url('../../../assets/images/stores/pin-blue.png') center bottom / contain no-repeat;
   opacity: var(--pop); transform-origin: 50% 100%;
   transform: translate(-50%, -100%) translateY(calc((1 - var(--pop)) * -16px)) scale(var(--s)); transition: transform .25s;
 }
-.sec-stores .sf-pin::before { /* 머리 */
-  content: ''; position: absolute; left: 50%; top: 2px; width: 15px; height: 15px; margin-left: -7.5px; border-radius: 50%; z-index: 1;
-  background: radial-gradient(circle at 36% 32%, var(--pl), var(--pc) 58%, var(--pd));
-  box-shadow: 0 2px 3px rgba(0, 12, 68, .28);
-}
-.sec-stores .sf-pin::after { /* 바늘 */
-  content: ''; position: absolute; left: 50%; top: 14px; bottom: 1px; width: 2px; margin-left: -1px;
-  background: linear-gradient(90deg, #d9d6d0, #8f8c86); clip-path: polygon(0 0, 100% 0, 60% 100%, 40% 100%);
-}
+.sec-stores .sf-pin.is-popup { background-image: url('../../../assets/images/stores/pin-yellow.png'); }
+.sec-stores .sf-pin::before { content: ''; position: absolute; inset: -6px -10px 0; } /* 누르기 쉬운 영역 */
 .sec-stores .sf-pin i { /* 꽂힌 자리 그림자 */
-  position: absolute; left: 50%; bottom: -2px; width: 9px; height: 4px; margin-left: -2px; border-radius: 50%;
-  background: rgba(0, 12, 68, .2); filter: blur(.5px);
+  position: absolute; left: 50%; bottom: -2px; width: 8px; height: 3px; margin-left: -1px; border-radius: 50%;
+  background: rgba(0, 12, 68, .22); filter: blur(.5px);
 }
-.sec-stores .sf-pin:hover, .sec-stores .sf-pin:focus-visible, .sec-stores .sf-pin.is-sel { --s: 1.25; outline: none; }
-.sec-stores .sf-pin:focus-visible::before { box-shadow: 0 0 0 3px var(--ivory), 0 0 0 5px var(--navy); }
+.sec-stores .sf-pin:hover, .sec-stores .sf-pin:focus-visible, .sec-stores .sf-pin.is-sel { --s: 1.2; outline: none; }
+.sec-stores .sf-pin:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
 
 /* ---------- 매장 정보: 3D 위 글자층 (3D 는 공통 캔버스에 그려짐) ---------- */
 .sec-stores .sf-city {
