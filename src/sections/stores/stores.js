@@ -2,21 +2,20 @@
 //
 // 스크롤 흐름 (구간 값은 아래 T 에서 한 번에 조정)
 //  1. 타이틀      STORE WORLDWIDE → 글자가 벌어지며 선 지구본(원 + 세로 타원)
-//  2. 지구본      유럽 정면, 세계 이케아 매장 핀이 지구본에 꽂힘, 제자리 자전 (지구본 클릭 = 바로 한반도로)
+//  2. 지구본      유럽 정면, 대륙은 망점 · 이케아 매장이 있는 점만 파랑, 제자리 자전 (지구본 클릭 = 바로 한반도로)
 //  3. 전환        한반도를 정면으로 돌린 뒤, 그 자리에서 원이 퍼지며 지구본과 같은 스타일의 한반도 지도가 열림
 //  4. 평면 지도    서울 핀 하나 → 지도가 연해지고 전체 핀 (핀에 마우스를 올릴 때만 매장 카드, 클릭 = 매장 정보로)
 //  5. 매장 정보    cheesedesign 처럼 두 묶음: 정규 매장 패널 9개 | 팝업 매장 패널 2개 (매장 동네 3D, © OpenStreetMap)
 //  6. FAMILY      시안 FAMILY 화면, 오른쪽 단어 목록이 위로 흐름 (santalarch 방식)
 import * as THREE from 'three';
 import { BaseSection } from '../../core/BaseSection.js';
-import { loadTexture } from '../../core/assets.js';
 import { ease, seg, lerp, clamp } from '../../core/tween.js';
 import { STORES, WORLD, FAMILY } from './data.js';
 
 // ▼ 교체 포인트
 const FILES = {
-  land: 'assets/images/stores/globe-land.png',     // 지구본 대륙 텍스처 (Natural Earth)
-  korea: 'assets/images/stores/korea-map.png',     // 한반도 지도 (시안 스타일: 회색 땅 + 흰 시·도 경계, Natural Earth · 통계청)
+  land: 'assets/images/stores/globe-land.png',     // 지구본 대륙 판정용 (Natural Earth, 화면에는 안 보임)
+  korea: 'assets/images/stores/korea-map.png',     // 한반도 망점 지도 (해안선 단순화, 안쪽 큰 점 → 해안 작은 점)
   family: 'assets/images/stores/family-billy.jpg', // 시안 FAMILY 사진
   panel: (id) => `assets/images/stores/panels/${id}.jpg`, // 매장 동네 3D (OpenStreetMap 건물을 미리 렌더링, 매장 = 이미지 정가운데)
 };
@@ -47,7 +46,7 @@ const KOREA = { lat: 36.5, lon: 127.8 };
 const EUROPE = { lat: 44, lon: 16 };   // 시안 3번 화면에서 정면에 보이는 곳
 const FIRST = 'gangdong';              // 시안 4번 화면: 서울에 핀 하나
 const DEFAULT = 'pangyo';              // 시안 5번 화면: 처음 보이는 매장 카드
-const C = { ivory: '#fcfaf6', line: '#d2cdc6', blue: '#0c3494', yellow: '#ffc800' };
+const C = { ivory: '#fcfaf6', line: '#d2cdc6', blue: '#0c3494', yellow: '#ffc800', dot: '#c9c3ba' };
 const PANEL_PIN = { gangdong: 0.407, goyang: 0.407 }; // 패널 이미지 속 핀 머리 높이 (이미지 높이 비율, 기본 0.371)
 const GROUPS = [
   { type: 'store', name: '정규 매장', kind: 'Store' },
@@ -73,6 +72,15 @@ function yawFor(lat, lon) {
   const v = latLonToVec3(lat, lon, 1);
   return -Math.atan2(v.x, v.z);
 }
+/** 동그란 점 텍스처 (지구본 망점) */
+const DOT = (() => {
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d');
+  g.fillStyle = '#fff';
+  g.beginPath(); g.arc(32, 32, 28, 0, Math.PI * 2); g.fill();
+  return new THREE.CanvasTexture(c);
+})();
 const byId = (id) => STORES.find((s) => s.id === id);
 const shortName = (s) => s.name.replace(/^이케아 (팝업 )?/, '');
 
@@ -91,7 +99,8 @@ export class StoresSection extends BaseSection {
 
   template() {
     const pins = STORES.map((s) => {
-      const [x, y] = mapXY(s.lat, s.lon);
+      // 지도 망점(간격 9)과 같은 칸에 맞춰 그 점을 칠한 것처럼
+      const [x, y] = mapXY(s.lat, s.lon).map((v) => 4 + Math.round((v - 4) / 9) * 9);
       return `<button type="button" class="sf-pin${s.type === 'popup' ? ' is-popup' : ''}" data-id="${s.id}" aria-label="${s.name} 매장 정보 보기"
         style="left:${((x / MAP.w) * 100).toFixed(3)}%;top:${((y / MAP.h) * 100).toFixed(3)}%"><i></i></button>`;
     }).join('');
@@ -214,22 +223,6 @@ export class StoresSection extends BaseSection {
     this.globeHit.renderOrder = -1;
     this.globe.add(this.globeHit);
 
-    const tex = loadTexture(FILES.land);
-    tex.anisotropy = 4;
-    this.landMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0, depthWrite: false });
-    this.globe.add(new THREE.Mesh(new THREE.SphereGeometry(R, 96, 64), this.landMat));
-
-    // 위경선
-    const pts = [];
-    for (let lon = -180; lon < 180; lon += 20) {
-      for (let lat = -88; lat < 88; lat += 4) pts.push(latLonToVec3(lat, lon, R * 1.001), latLonToVec3(lat + 4, lon, R * 1.001));
-    }
-    for (let lat = -60; lat <= 75; lat += 15) {
-      for (let lon = -180; lon < 180; lon += 4) pts.push(latLonToVec3(lat, lon, R * 1.001), latLonToVec3(lat, lon + 4, R * 1.001));
-    }
-    this.gratMat = new THREE.LineBasicMaterial({ color: C.line, transparent: true, opacity: 0 });
-    this.globe.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), this.gratMat));
-
     // 카메라를 보는 평면 요소: 테두리 원 · 시안 2번 세로 타원
     this.face = new THREE.Group();
     this.scene.add(this.face);
@@ -244,47 +237,75 @@ export class StoresSection extends BaseSection {
     rim.renderOrder = oval.renderOrder = 3;
     this.face.add(rim, oval);
 
-    // 매장 핀 (cheesedesign 핀): 동그란 머리 + 연한 빛 테두리 + 아래로 흐려지는 가는 기둥
-    const list = [
-      ...WORLD.map(([lat, lon]) => ({ lat, lon, color: C.blue })),
-      ...STORES.map((s) => ({ lat: s.lat, lon: s.lon, color: s.type === 'popup' ? C.yellow : C.blue })),
-    ];
-    const stem = [], stemCol = [], heads = [], colors = [];
-    const col = new THREE.Color();
-    for (const d of list) {
-      const a = latLonToVec3(d.lat, d.lon, R), b = latLonToVec3(d.lat, d.lon, R * 1.05);
-      stem.push(a.x, a.y, a.z, b.x, b.y, b.z);
-      col.set(d.color);
-      stemCol.push(col.r, col.g, col.b, 0, col.r, col.g, col.b, 1); // 땅 쪽은 투명
-      heads.push(b.x, b.y, b.z);
-      colors.push(col.r, col.g, col.b);
+    // 대륙 = 망점, 매장이 있는 자리의 점만 파랑(정규)·노랑(팝업)으로 칠함
+    const mat = (size) => {
+      const m = new THREE.PointsMaterial({ size, sizeAttenuation: true, map: DOT, vertexColors: true, transparent: true, opacity: 0, depthWrite: false, alphaTest: 0.3 });
+      // 지구본 가장자리로 갈수록 점을 배경색으로 (가장자리에 점이 몰려 진해지지 않게)
+      m.onBeforeCompile = (sh) => {
+        sh.uniforms.uCenter = this.globeCenter;
+        sh.uniforms.uBg = { value: new THREE.Color(C.ivory) };
+        sh.vertexShader = sh.vertexShader
+          .replace('#include <common>', '#include <common>\nuniform vec3 uCenter;\nvarying float vFace;')
+          .replace('#include <project_vertex>', '#include <project_vertex>\nvFace = clamp((dot(normalize(mvPosition.xyz - uCenter), normalize(-mvPosition.xyz)) - 0.12) / 0.38, 0.0, 1.0);');
+        sh.fragmentShader = sh.fragmentShader
+          .replace('#include <common>', '#include <common>\nuniform vec3 uBg;\nvarying float vFace;')
+          .replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.rgb = mix(uBg, diffuseColor.rgb, vFace);');
+      };
+      return m;
+    };
+    this.globeCenter = { value: new THREE.Vector3() };
+    this.dotMat = mat(0.052);
+    this.storeDotMat = mat(0.052);
+    this.buildDots();
+  }
+
+  /** 육지 위에 고르게 점을 뿌리고 (피보나치 구), 매장과 가장 가까운 점을 칠함 */
+  async buildDots() {
+    const img = new Image();
+    img.src = FILES.land;
+    try { await img.decode(); } catch (err) { console.warn('[stores] 지구본 대륙 이미지를 불러오지 못했습니다', err); return; }
+    const cv = document.createElement('canvas');
+    cv.width = img.width; cv.height = img.height;
+    const g = cv.getContext('2d', { willReadFrequently: true });
+    g.drawImage(img, 0, 0);
+    const px = g.getImageData(0, 0, cv.width, cv.height).data;
+    const isLand = (lat, lon) => {
+      const x = Math.min(cv.width - 1, Math.floor(((lon + 180) / 360) * cv.width));
+      const y = Math.min(cv.height - 1, Math.floor(((90 - lat) / 180) * cv.height));
+      return px[(y * cv.width + x) * 4] < 238;
+    };
+    const land = [];
+    const N = 26000, ga = Math.PI * (3 - Math.sqrt(5));
+    for (let i = 0; i < N; i++) {
+      const y = 1 - (2 * (i + 0.5)) / N, th = ga * i;
+      const lat = THREE.MathUtils.radToDeg(Math.asin(y));
+      const lon = THREE.MathUtils.radToDeg(Math.atan2(Math.sin(th), Math.cos(th)));
+      if (isLand(lat, lon)) land.push(latLonToVec3(lat, lon, R * 1.001));
     }
-    const stemGeo = new THREE.BufferGeometry();
-    stemGeo.setAttribute('position', new THREE.Float32BufferAttribute(stem, 3));
-    stemGeo.setAttribute('color', new THREE.Float32BufferAttribute(stemCol, 4));
-    this.stemMat = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0, depthWrite: false });
-    // 머리 텍스처: 꽉 찬 원 + 바깥 연한 테두리 (흰색이라 핀 색과 곱해짐)
-    const dot = document.createElement('canvas');
-    dot.width = dot.height = 128;
-    const g = dot.getContext('2d');
-    const halo = g.createRadialGradient(64, 64, 30, 64, 64, 62);
-    halo.addColorStop(0, 'rgba(255,255,255,.38)');
-    halo.addColorStop(0.55, 'rgba(255,255,255,.22)');
-    halo.addColorStop(1, 'rgba(255,255,255,0)');
-    g.fillStyle = halo;
-    g.fillRect(0, 0, 128, 128);
-    g.fillStyle = '#fff';
-    g.beginPath(); g.arc(64, 64, 34, 0, Math.PI * 2); g.fill();
-    const headGeo = new THREE.BufferGeometry();
-    headGeo.setAttribute('position', new THREE.Float32BufferAttribute(heads, 3));
-    headGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-    this.headMat = new THREE.PointsMaterial({
-      size: 0.16, sizeAttenuation: true, map: new THREE.CanvasTexture(dot), vertexColors: true,
-      transparent: true, opacity: 0, depthWrite: false, alphaTest: 0.01,
-    });
-    this.pins = new THREE.Group();
-    this.pins.add(new THREE.LineSegments(stemGeo, this.stemMat), new THREE.Points(headGeo, this.headMat));
-    this.globe.add(this.pins);
+    const nearest = (lat, lon) => {
+      const p = latLonToVec3(lat, lon, R * 1.001);
+      let best = 0, bd = Infinity;
+      land.forEach((q, i) => { const d = p.distanceToSquared(q); if (d < bd) { bd = d; best = i; } });
+      return best;
+    };
+    const paint = new Map();
+    WORLD.forEach(([lat, lon]) => paint.set(nearest(lat, lon), C.blue));
+    STORES.forEach((s) => paint.set(nearest(s.lat, s.lon), s.type === 'popup' ? C.yellow : C.blue));
+    const build = (pick, material) => {
+      const pos = [], cols = [], c = new THREE.Color();
+      land.forEach((p, i) => {
+        const col = pick(i);
+        if (!col) return;
+        pos.push(p.x, p.y, p.z);
+        c.set(col); cols.push(c.r, c.g, c.b);
+      });
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+      this.globe.add(new THREE.Points(geo, material));
+    };
+    build((i) => !paint.has(i) && C.dot, this.dotMat);
+    build((i) => paint.get(i), this.storeDotMat);
   }
 
   /* ---------------- 매장 카드 ---------------- */
@@ -420,21 +441,19 @@ export class StoresSection extends BaseSection {
     this.face.position.copy(this.tilt.position);
     this.face.scale.setScalar(s / Math.sqrt(Math.max(0.05, 1 - ((R * s) / camD) ** 2))); // 원근 보정
 
-    this.landMat.opacity = grow;
-    this.gratMat.opacity = 0.85 * grow;
+    this.dotMat.opacity = grow;
     this.rimMat.opacity = wire;
     this.ovalMat.opacity = wire * (1 - grow);
     // 핀이 지구본 안쪽에서 쑥 꽂혀 나옴
     const pinsUp = ease.out(seg(pin, T.grow[0] + 0.03, T.grow[1]));
-    this.headMat.opacity = pinsUp;
-    this.stemMat.opacity = 0.9 * pinsUp;
-    this.pins.visible = pinsUp > 0;
-    this.pins.scale.setScalar(lerp(0.95, 1, pinsUp));
+    this.storeDotMat.opacity = pinsUp;
 
     this.camera.position.set(0, 0, camD);
     this.camera.lookAt(0, 0, 0);
     this.face.quaternion.copy(this.camera.quaternion);
     this.camera.updateProjectionMatrix();
+    this.camera.updateMatrixWorld();
+    this.globeCenter.value.copy(this.tilt.position).applyMatrix4(this.camera.matrixWorldInverse); // 가장자리 흐림용
 
     // ---- 지도가 원형으로 열림 (원의 중심 = 지구본 위 한반도의 화면 위치) ----
     if (globeOn) {
