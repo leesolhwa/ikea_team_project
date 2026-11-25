@@ -60,12 +60,13 @@
 .sec-stores .sf-card {
   position: absolute; z-index: 4; left: 0; top: 0; width: max-content; max-width: min(300px, 60vw);
   display: grid; gap: 6px; justify-items: start; color: var(--navy);
+  text-shadow: 0 0 3px var(--ivory), 0 0 6px var(--ivory), 0 0 10px var(--ivory); /* 지도 점 위에서도 읽히게 */
   opacity: 0; transition: opacity .2s; pointer-events: none;
 }
 .sec-stores .sf-card.is-on { opacity: 1; pointer-events: auto; }
 .sec-stores .sf-card div { display: grid; gap: 4px; }
 .sec-stores .sf-card h3 { margin: 0; font: 600 15px/1.2 var(--sans); letter-spacing: -0.03em; }
-.sec-stores .sf-card p { margin: 0; font: 400 12px/1.4 var(--sans); letter-spacing: -0.02em; color: #6f6b64; }
+.sec-stores .sf-card p { margin: 0; font: 400 12px/1.4 var(--sans); letter-spacing: -0.02em; color: #4a4740; }
 .sec-stores .sf-card a {
   font: 400 11px/1 var(--display); letter-spacing: 0; text-transform: uppercase; color: var(--navy);
   text-decoration: underline; text-underline-offset: 3px; padding: 4px 0;

@@ -43,7 +43,7 @@ const KOREA = { lat: 36.5, lon: 127.8 };
 const EUROPE = { lat: 44, lon: 16 };   // 시안 3번 화면에서 정면에 보이는 곳
 const FIRST = 'gangdong';              // 시안 4번 화면: 서울에 핀 하나
 const DEFAULT = 'pangyo';              // 시안 5번 화면: 처음 보이는 매장 카드
-const C = { ivory: '#fcfaf6', line: '#d2cdc6', blue: '#0c3494', yellow: '#ffc800', dot: '#c9c3ba' };
+const C = { ivory: '#fcfaf6', line: '#e6e3dd', blue: '#0c3494', yellow: '#ffc800', dot: '#c9c3ba' };
 /** 구간 값: keys = [[pin, 값], ...] 사이를 부드럽게 잇습니다 */
 function kf(p, keys) {
   if (p <= keys[0][0]) return keys[0][1];
