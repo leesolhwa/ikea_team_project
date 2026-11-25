@@ -269,7 +269,7 @@ export class StoresSection extends BaseSection {
       ...WORLD.map(([lat, lon]) => ({ lat, lon, color: C.blue })),
       ...STORES.map((s) => ({ lat: s.lat, lon: s.lon, color: s.type === 'popup' ? C.yellow : C.blue })),
     ];
-    const g = pushpinGeometries(R * 0.06, R * 0.011, R * 0.0016);
+    const g = pushpinGeometries(R * 0.06, R * 0.009, R * 0.0016);
     this.needleMat = new THREE.MeshStandardMaterial({ color: C.needle, metalness: 0.6, roughness: 0.35, transparent: true, opacity: 0 });
     this.headMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.32, metalness: 0, transparent: true, opacity: 0 });
     const needles = new THREE.InstancedMesh(g.needle, this.needleMat, list.length);
