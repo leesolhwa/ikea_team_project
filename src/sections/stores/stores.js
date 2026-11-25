@@ -43,7 +43,7 @@ const KOREA = { lat: 36.5, lon: 127.8 };
 const EUROPE = { lat: 44, lon: 16 };   // 시안 3번 화면에서 정면에 보이는 곳
 const FIRST = 'gangdong';              // 시안 4번 화면: 서울에 핀 하나
 const DEFAULT = 'pangyo';              // 시안 5번 화면: 처음 보이는 매장 카드
-const C = { ivory: '#fcfaf6', line: '#cfc9be', blue: '#0c3494', yellow: '#ffc800', bld: '#fbfaf6' };
+const C = { ivory: '#fcfaf6', line: '#d2cdc6', blue: '#0c3494', yellow: '#ffc800', bld: '#fbfaf6' };
 const CITY = { dist: 3000, polar: 57, az: 4, pinH: 300 };   // 동네 3D 카메라 (m, 도)
 const PANEL_PIN = { gangdong: 0.407, goyang: 0.407 };      // 패널 이미지 속 핀 머리 높이(기본 0.371)
 const REGIONS = [
@@ -152,7 +152,7 @@ export class StoresSection extends BaseSection {
     this.dom = {
       w1: this.$('.sf-w1'), w2: this.$('.sf-w2'), cur: this.$('.sf-w2 .cur'), alt: this.$('.sf-w2 .alt'),
       v1: this.$('.sf-vl.v1'), v2: this.$('.sf-vl.v2'), v3: this.$('.sf-vl.v3'), mid: this.$('.sf-h.mid'),
-      bar: this.$('.sf-bar'), navBtns: this.$$('.sf-nav button'),
+      bar: this.$('.sf-bar'), nav: this.$('.sf-nav'), grid: this.$('.sf-grid'), navBtns: this.$$('.sf-nav button'),
       reveal: this.$('.sf-reveal'), map: this.$('.sf-map'), mapImg: this.$('.sf-map img'), pins: this.$$('.sf-dots button'),
       city: this.$('.sf-city'), cityLabels: this.$('.sf-citylabels'), cityPin: this.$('.sf-citypin'),
       panels: this.$('.sf-panels'), panelBtns: this.$$('.sf-panel'),
@@ -395,6 +395,8 @@ export class StoresSection extends BaseSection {
     d.bar.style.width = px(bar);
     const step = pin < T.reveal[0] + 0.04 ? 0 : pin < T.family[0] + 0.03 ? 1 : 2;
     d.navBtns.forEach((b, i) => b.classList.toggle('is-on', i === step));
+    d.nav.classList.toggle('is-family', fam > 0.5);
+    d.grid.classList.toggle('is-family', fam > 0.5);
 
     // ---- 지구본 ----
     const globeOn = reveal < 1;
@@ -443,7 +445,7 @@ export class StoresSection extends BaseSection {
       const az = THREE.MathUtils.degToRad(CITY.az + orbit * 18 + Math.sin(time * 0.15) * 1.5);
       const dist = CITY.dist * Math.max(1, 1.5 / (this.vw / this.vh)) * lerp(1.6, 1, cityIn); // 세로로 긴 화면이면 조금 멀리
       this.camera.position.set(dist * Math.sin(pol) * Math.sin(az), dist * Math.cos(pol), dist * Math.sin(pol) * Math.cos(az));
-      this.camera.lookAt(0, 0, 0);
+      this.camera.lookAt(0, 0, 420 * cityIn); // 매장이 카드보다 위에 보이게
       this.camera.near = 10; this.camera.far = 20000;
     } else {
       this.camera.position.set(0, 0, camD);
@@ -488,12 +490,15 @@ export class StoresSection extends BaseSection {
       d.cityPin.style.transform = `translate(${hx}px, ${hy}px)`;
       d.cityPin.style.height = `${Math.max(0, gy - hy)}px`;
       d.cityPin.classList.toggle('is-popup', this.selected?.type === 'popup');
+      const cr = d.card.getBoundingClientRect();
+      const hostR = this.el.getBoundingClientRect();
       [...d.cityLabels.children].forEach((el) => {
         const [, x, y] = this.cityStations[+el.dataset.i];
         const [sx, sy, z] = toScreen(x, 0, y);
         const nx = sx / this.vw - 0.5, ny = sy / this.vh - 0.55;
         el.style.transform = `translate(${sx}px, ${sy}px)`;
-        el.style.opacity = z < 1 && nx * nx + ny * ny < 0.045 ? 1 : 0;
+        const onCard = sx + hostR.left > cr.left - 20 && sx + hostR.left < cr.right + 20 && sy + hostR.top > cr.top - 20 && sy + hostR.top < cr.bottom + 20;
+        el.style.opacity = z < 1 && !onCard && nx * nx + ny * ny < 0.045 ? 1 : 0;
       });
     }
 
