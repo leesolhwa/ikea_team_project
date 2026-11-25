@@ -1,7 +1,7 @@
 const $=s=>document.getElementById(s);
 const rooms=[
   {id:'about',name:'About',ko:'거실',text:'왼쪽 거실에서 탐색을 시작합니다. 소파와 낮은 테이블 너머로 안쪽 전시 공간이 이어집니다.',items:['소파와 플로어 램프가 놓인 휴식 공간','창가를 따라 이어지는 작은 좌석들']},
-  {id:'ikea-ps',name:'IKEA PS',ko:'컬렉션 전시실',text:'거실 뒤편의 전시실입니다. 진열대 사이를 걸으며 가구의 높이와 간격을 살펴보고, 오른쪽 출입구로 중앙 통로에 들어갈 수 있습니다.',items:['벽면을 따라 놓인 오픈 선반','낮은 전시대 위의 의자와 조명']},
+  {id:'ikea-ps',name:'IKEA PS',ko:'컬렉션 전시실',page:'./src/sections/collection/collection.html',text:'거실 뒤편의 전시실입니다. 진열대 사이를 걸으며 가구의 높이와 간격을 살펴보고, 오른쪽 출입구로 중앙 통로에 들어갈 수 있습니다.',items:['벽면을 따라 놓인 오픈 선반','낮은 전시대 위의 의자와 조명']},
   {id:'3d-room',name:'3D room',ko:'침실',text:'중앙 통로에서 안쪽으로 들어온 침실입니다. 침대 발치에서 시선을 돌리면 헤드보드, 협탁, 수납장의 배치가 한눈에 들어옵니다.',items:['낮은 침대와 패브릭 침구','침대 옆 협탁과 조명']},
   {id:'store-family',name:'Store & Family',ko:'패밀리 라운지',text:'도면 오른쪽 앞에 자리한 라운지입니다. 데이베드와 독서등이 놓여 있고, 옆 출입구를 지나면 다이닝으로 이어지는 복도에 닿습니다.',items:['오른쪽 앞방에 놓인 데이베드','침대 옆 키 큰 독서등']},
   {id:'restaurant',name:'Restaurant',ko:'키친 & 다이닝',text:'오른쪽 뒤편의 식탁과 주방입니다. 의자 사이와 조리대 앞을 오가며 식탁 위 펜던트와 벽면 수납장을 다른 각도로 볼 수 있습니다.',items:['여섯 자리가 있는 긴 식탁','벽면 조리대와 상부 수납장']}
@@ -233,6 +233,8 @@ function syncDetail(){
   busy=false;wipe.hidden=true;dialog.removeAttribute('data-preview');
   dialog.inert=false;
   const dest=rooms.findIndex(r=>location.hash==='#'+r.id);
+  // 주소에 #ikea-ps 처럼 직접 들어온 경우에도 별도 상세페이지로 보냅니다.
+  if(dest>=0&&rooms[dest].page){location.replace(rooms[dest].page);return}
   detailIndex=dest;
   if(dest<0){
     if(dialog.open)dialog.close();
@@ -248,6 +250,8 @@ function enter(e,dest){
   e.preventDefault();
   if(busy||position!==destination||dialog.open||dest>=rooms.length)return;
   const finish=()=>{
+    // 별도 상세페이지(page)가 있는 방은 그 페이지로 이동합니다.
+    if(rooms[dest].page){location.href=rooms[dest].page;return}
     history.pushState({roomTour:{index}},'','#'+rooms[dest].id);
     syncDetail();
   };
@@ -272,7 +276,7 @@ function enter(e,dest){
 }
 $('enter').onclick=e=>enter(e,index);opening.onclick=e=>enter(e,index);
 for(const [i,r] of rooms.entries()){
-  const a=document.createElement('a');a.href='#'+r.id;a.textContent=r.name;
+  const a=document.createElement('a');a.href=r.page||'#'+r.id;a.textContent=r.name;
   a.onclick=e=>enter(e,i);$('footerlinks').append(a);
 }
 function leave(){
@@ -280,5 +284,8 @@ function leave(){
   else{history.replaceState(null,'',location.pathname+location.search);syncDetail()}
 }
 $('back').onclick=leave;dialog.oncancel=e=>{e.preventDefault();leave()};
-addEventListener('popstate',syncDetail);addEventListener('hashchange',syncDetail);
+addEventListener('popstate',syncDetail);
+// 상세페이지에서 뒤로 가기로 돌아왔을 때 전환 효과가 남아 있지 않도록 초기화합니다.
+addEventListener('pageshow',e=>{if(e.persisted)syncDetail()});
+addEventListener('hashchange',syncDetail);
 new ResizeObserver(schedule).observe(world);theme();syncDetail();
