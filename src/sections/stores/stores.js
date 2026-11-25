@@ -4,7 +4,7 @@
 //  1. 타이틀      STORE WORLDWIDE → 글자가 벌어지며 선 지구본(원 + 세로 타원)
 //  2. 지구본      유럽 정면, 세계 이케아 매장 핀이 지구본에 꽂힘, 제자리 자전 (지구본 클릭 = 바로 한반도로)
 //  3. 전환        한반도를 정면으로 돌린 뒤, 그 자리에서 원이 퍼지며 지구본과 같은 스타일의 한반도 지도가 열림
-//  4. 평면 지도    서울 핀 하나 → 지도가 연해지고 전체 핀·매장 카드 (핀에 마우스 = 카드, 클릭 = 매장 정보로)
+//  4. 평면 지도    서울 핀 하나 → 지도가 연해지고 전체 핀 (핀에 마우스를 올릴 때만 매장 카드, 클릭 = 매장 정보로)
 //  5. 매장 정보    cheesedesign 처럼 두 묶음: 정규 매장 패널 9개 | 팝업 매장 패널 2개 (매장 동네 3D, © OpenStreetMap)
 //  6. FAMILY      시안 FAMILY 화면, 오른쪽 단어 목록이 위로 흐름 (santalarch 방식)
 import * as THREE from 'three';
@@ -16,7 +16,7 @@ import { STORES, WORLD, FAMILY } from './data.js';
 // ▼ 교체 포인트
 const FILES = {
   land: 'assets/images/stores/globe-land.png',     // 지구본 대륙 텍스처 (Natural Earth)
-  korea: 'assets/images/stores/korea-map.png',     // 한반도 지도 (지구본 스타일, Natural Earth · 통계청 시도 경계)
+  korea: 'assets/images/stores/korea-map.png',     // 한반도 지도 (시안 스타일: 회색 땅 + 흰 시·도 경계, Natural Earth · 통계청)
   family: 'assets/images/stores/family-billy.jpg', // 시안 FAMILY 사진
   panel: (id) => `assets/images/stores/panels/${id}.jpg`, // 매장 동네 3D (OpenStreetMap 건물을 미리 렌더링, 매장 = 이미지 정가운데)
 };
@@ -30,7 +30,7 @@ const T = {
 };
 const GO = { location: 0.18, info: 0.7, family: 0.87 }; // 메뉴로 이동할 위치
 
-// 한반도 지도 이미지 (지구본과 같은 정사영·같은 색, 3000 × 1400 시안 px, 2배 해상도)
+// 한반도 지도 이미지 (지구본 정면과 같은 정사영, 3000 × 1400 시안 px, 2배 해상도)
 // 중심 (127.8°E, 36.5°N) = (1500, 700), 중심에서 경도 1도 = 150px
 const MAP = { w: 3000, h: 1400, cx: 1500, cy: 700, lat0: 36.5, lon0: 127.8, r: 10691.4 };
 function mapXY(lat, lon) {
@@ -179,8 +179,12 @@ export class StoresSection extends BaseSection {
     // 평면 지도 핀: 마우스 = 카드, 클릭 = 매장 정보 패널로
     this.dom.pins.forEach((b) => {
       const store = byId(b.dataset.id);
-      b.addEventListener('pointerenter', () => this.pickStore(store));
-      b.addEventListener('focus', () => this.pickStore(store));
+      const show = () => { this.pickStore(store); this.hovering = true; };
+      const hide = () => { this.hovering = false; };
+      b.addEventListener('pointerenter', show);
+      b.addEventListener('focus', show);
+      b.addEventListener('pointerleave', hide);
+      b.addEventListener('blur', hide);
       b.addEventListener('click', (e) => { e.stopPropagation(); this.pickStore(store); this.ctx.scroll.scrollTo(GO.info); });
     });
     this.dom.panelEls.forEach((a) => {
@@ -426,7 +430,10 @@ export class StoresSection extends BaseSection {
       const a = b.dataset.id === FIRST ? at(pin, T.first) : seg(pin, T.dim[0] + (i % 6) * 0.006, T.dim[0] + 0.03 + (i % 6) * 0.006);
       b.style.setProperty('--pop', ease.out(a).toFixed(3));
     });
-    d.card.classList.toggle('is-on', pin > T.dim[0] + 0.02 && pin < T.info[0] + 0.01);
+    // 매장 카드: 핀에 마우스를 올렸을 때만
+    const mapLive = pin > T.dim[0] + 0.02 && pin < T.info[0] + 0.01;
+    d.card.classList.toggle('is-on', mapLive && !!this.hovering);
+    d.pins.forEach((b) => b.classList.toggle('is-sel', mapLive && !!this.hovering && b.dataset.id === this.selected?.id));
 
     // ---- 매장 정보 패널 (아래에서 올라옴) ----
     d.panels.style.transform = `translateY(${(1 - infoIn) * 100}%)`;
