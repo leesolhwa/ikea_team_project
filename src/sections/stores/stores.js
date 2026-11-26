@@ -555,6 +555,13 @@ export class StoresSection extends BaseSection {
       transformOrigin: `${(MAP.cx / MAP.w) * 100}% ${(MAP.cy / MAP.h) * 100}%`,
     });
     this.mapOrigin = this.dom.map.style.transformOrigin;
+    // 매장 점마다 마우스가 닿는 영역을 이웃 점과 겹치기 직전까지 넓힘 (최대 지름 120px)
+    const xy = this.dom.pins.map((b) => { const st = byId(b.dataset.id); const [x, y] = mapXY(st.lat, st.lon); return [x * k, y * k]; });
+    this.dom.pins.forEach((b, i) => {
+      let near = Infinity;
+      xy.forEach((p, j) => { if (j !== i) near = Math.min(near, Math.hypot(p[0] - xy[i][0], p[1] - xy[i][1])); });
+      b.style.setProperty('--hit', `${Math.max(24, Math.min(120, near - 2)).toFixed(0)}px`);
+    });
     this.mapAt = { k, cx, cy };
   }
 
