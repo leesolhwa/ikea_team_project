@@ -3,19 +3,19 @@
 // 스크롤 흐름 (구간 값은 아래 T 에서 한 번에 조정)
 //  1. 타이틀      STORE WORLDWIDE → 글자가 벌어지며 선 지구본(원 + 세로 타원)
 //  2. 지구본      noart 레퍼런스 지구본(경위선 + 회색 대륙), 매장이 있는 나라마다 남색 네모, 제자리 자전 (지구본 클릭 = 바로 한반도로)
-//  3. 전환        한반도를 정면으로 돌린 뒤 그대로 확대 → 같은 투영의 한반도 라인 지도로 이어짐
+//  3. 전환        한반도를 정면으로 돌린 뒤 그대로 확대 (지도 전체를 코드로 그려서 확대해도 깨지지 않음)
+//                 대륙 면·경위선은 사라지고 한반도 해안선·도 경계선만 남아 라인 지도가 됨
 //  4. 한반도 지도  해안선·도 경계선 라인 + 매장 네모 (서울 하나 → 전체). 네모에 마우스 = 시안 매장 카드
 //  5. FAMILY      시안 FAMILY 화면, 오른쪽 단어 목록이 위로 흐름 (santalarch 방식)
 import * as THREE from 'three';
 import { BaseSection } from '../../core/BaseSection.js';
 import { ease, seg, lerp, clamp } from '../../core/tween.js';
-import { loadTexture } from '../../core/assets.js';
 import { STORES, COUNTRIES, FAMILY } from './data.js';
 
 // ▼ 교체 포인트
 const FILES = {
-  land: 'assets/images/stores/globe-land.webp',     // 지구본 대륙 (Natural Earth: 회색 대륙 + 나라 경계선)
-  korea: 'assets/images/stores/korea-line.webp',    // 한반도 라인 지도 (해안선 + 도 경계선, 지구본 정면과 같은 정사영)
+  world: new URL('./data/world.json', import.meta.url).href, // 세계 나라 경계 (Natural Earth 1:50m, 한국·북한 제외, 0.05도 단위 차분 부호화)
+  korea: new URL('./data/korea.json', import.meta.url).href, // 한반도 해안선(남해 섬 정리) + 도 경계선 (0.001도 단위 차분 부호화)
   family: 'assets/images/stores/family-billy.webp', // 시안 FAMILY 사진
 };
 
@@ -44,7 +44,7 @@ const KOREA = { lat: 36.5, lon: 127.8 };
 const EUROPE = { lat: 44, lon: 16 };   // 시안 3번 화면에서 정면에 보이는 곳
 const FIRST = 'gangdong';              // 시안 4번 화면: 서울에 핀 하나
 const DEFAULT = 'pangyo';              // 시안 5번 화면: 처음 보이는 매장 카드
-const C = { ivory: '#fcfaf6', line: '#e6e3dd', grat: '#bdb6ab', navy: '#000c44', yellow: '#ffc800' };
+const C = { ivory: '#fcfaf6', line: '#e6e3dd', grat: '#bdb6ab', navy: '#000c44', yellow: '#ffc800', ocean: '#f9f7f2', land: '#dddcd8', edge: '#bebbb5', krEdge: '#b2aea7' };
 /** 구간 값: keys = [[pin, 값], ...] 사이를 부드럽게 잇습니다 */
 function kf(p, keys) {
   if (p <= keys[0][0]) return keys[0][1];
@@ -90,7 +90,6 @@ export class StoresSection extends BaseSection {
     return /* html */ `
       <div class="sf-reveal">
         <figure class="sf-map" aria-label="이케아 국내 매장 지도">
-          <img src="${FILES.korea}" alt="" />
           <div class="sf-dots">${pins}</div>
         </figure>
       </div>
@@ -122,7 +121,6 @@ export class StoresSection extends BaseSection {
 
       <article class="sf-card" aria-live="polite">
         <div><h3></h3><p></p></div>
-        <a target="_blank" rel="noopener">View more</a>
       </article>
     `;
   }
@@ -133,7 +131,7 @@ export class StoresSection extends BaseSection {
       v1: this.$('.sf-vl.v1'), v2: this.$('.sf-vl.v2'), v3: this.$('.sf-vl.v3'), mid: this.$('.sf-h.mid'),
       bar: this.$('.sf-bar'), nav: this.$('.sf-nav'), grid: this.$('.sf-grid'), navBtns: this.$$('.sf-nav button'),
       reveal: this.$('.sf-reveal'), map: this.$('.sf-map'),  pins: this.$$('.sf-pin'),
-      card: this.$('.sf-card'), cardName: this.$('.sf-card h3'), cardAddr: this.$('.sf-card p'), cardLink: this.$('.sf-card a'),
+      card: this.$('.sf-card'), cardName: this.$('.sf-card h3'), cardAddr: this.$('.sf-card p'),
       family: this.$('.sf-family'), photo: this.$('.sf-photo'), special: this.$('.sf-special'), words: this.$$('.sf-list li'),
     };
 
@@ -198,11 +196,14 @@ export class StoresSection extends BaseSection {
     rim.renderOrder = oval.renderOrder = 3;
     this.face.add(rim, oval);
 
-    // 대륙: noart 레퍼런스처럼 회색 대륙 + 나라 경계선 (텍스처), 그 위에 경위선
-    const tex = loadTexture(FILES.land);
-    tex.anisotropy = 8;
-    this.landMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0, depthWrite: false });
-    this.globe.add(new THREE.Mesh(new THREE.SphereGeometry(R, 128, 96), this.landMat));
+    // 대륙: noart 레퍼런스처럼 바다 + 회색 대륙 + 나라 경계선. 이미지 대신 지도 좌표로 직접 그림
+    this.oceanMat = new THREE.MeshBasicMaterial({ color: C.ocean, transparent: true, opacity: 0 });
+    this.globe.add(new THREE.Mesh(new THREE.SphereGeometry(R * 0.999, 128, 96), this.oceanMat));
+    this.landMat = new THREE.MeshBasicMaterial({ color: C.land, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide });
+    this.krLandMat = this.landMat.clone();
+    this.edgeMat = new THREE.LineBasicMaterial({ color: C.edge, transparent: true, opacity: 0 });
+    this.krEdgeMat = new THREE.LineBasicMaterial({ color: C.krEdge, transparent: true, opacity: 0 });
+    this.buildMap();
     const grat = [];
     for (let lon = -180; lon < 180; lon += 15) {
       for (let lat = -88; lat < 88; lat += 2) grat.push(latLonToVec3(lat, lon, R * 1.001), latLonToVec3(lat + 2, lon, R * 1.001));
@@ -227,6 +228,71 @@ export class StoresSection extends BaseSection {
     this.markKrMat = marks([[KOREA.lat, KOREA.lon]], 10);
   }
 
+  /** 세계·한반도 지도를 지도 좌표로 그림 (면 = 경위도 평면에서 삼각형으로 나눈 뒤 잘게 쪼개 구에 붙임, 선 = 0.5도 간격으로 구 위를 따라감) */
+  async buildMap() {
+    let world, korea;
+    try {
+      [world, korea] = await Promise.all([fetch(FILES.world).then((r) => r.json()), fetch(FILES.korea).then((r) => r.json())]);
+    } catch (err) { console.warn('[stores] 지도 데이터를 불러오지 못했습니다', err); return; }
+    const decode = (d, unit) => { // 차분 부호화된 [x, y, dx, dy, ...] → [[경도, 위도], ...]
+      const out = [];
+      let x = 0, y = 0;
+      for (let i = 0; i < d.length; i += 2) { x += d[i]; y += d[i + 1]; out.push([x / unit, y / unit]); }
+      return out;
+    };
+    const fill = [], lines = [], krFill = [], krLines = [];
+    const add = (a, b) => { for (let i = 0; i < b.length; i++) a.push(b[i]); };
+    const fillRings = (rings, out) => {
+      const v2 = (r) => r.map(([x, y]) => new THREE.Vector2(x, y));
+      const outer = v2(rings[0]), holes = rings.slice(1).map(v2);
+      if (outer.length < 3) return;
+      let all = outer;
+      for (const h of holes) all = all.concat(h);
+      const put = (a, b, c, depth) => { // 2.5도보다 긴 변은 반으로 쪼개서 구의 곡면을 따라가게
+        const ab = a.distanceTo(b), bc = b.distanceTo(c), ca = c.distanceTo(a), m = Math.max(ab, bc, ca);
+        if (m > 2.5 && depth < 7) {
+          if (m === ab) { const h = a.clone().lerp(b, 0.5); put(a, h, c, depth + 1); put(h, b, c, depth + 1); }
+          else if (m === bc) { const h = b.clone().lerp(c, 0.5); put(a, b, h, depth + 1); put(a, h, c, depth + 1); }
+          else { const h = c.clone().lerp(a, 0.5); put(a, b, h, depth + 1); put(h, b, c, depth + 1); }
+          return;
+        }
+        for (const p of [a, b, c]) { const v = latLonToVec3(p.y, p.x, R * 1.0004); out.push(v.x, v.y, v.z); }
+      };
+      for (const [i, j, k] of THREE.ShapeUtils.triangulateShape(outer, holes)) put(all[i], all[j], all[k], 0);
+    };
+    const strokeRing = (ring, out, r) => {
+      for (let i = 0; i < ring.length - 1; i++) {
+        const [x1, y1] = ring[i], [x2, y2] = ring[i + 1];
+        if (Math.abs(x1 - x2) > 90) continue; // 날짜변경선
+        const n = Math.max(1, Math.ceil(Math.hypot(x2 - x1, y2 - y1) / 0.5));
+        for (let k = 0; k < n; k++) {
+          const a = latLonToVec3(lerp(y1, y2, k / n), lerp(x1, x2, k / n), r), b = latLonToVec3(lerp(y1, y2, (k + 1) / n), lerp(x1, x2, (k + 1) / n), r);
+          out.push(a.x, a.y, a.z, b.x, b.y, b.z);
+        }
+      }
+    };
+    for (const poly of world) {
+      const rings = poly.map((d) => { const r = decode(d, 20); r.push(r[0]); return r; });
+      fillRings(rings, fill);
+      for (const r of rings) strokeRing(r, lines, R * 1.0008);
+    }
+    for (const d of korea.coast) {
+      const r = decode(d, 1000); r.push(r[0]);
+      fillRings([r], krFill);
+      strokeRing(r, krLines, R * 1.0009);
+    }
+    for (const d of korea.inner) strokeRing(decode(d, 1000), krLines, R * 1.0009);
+    const mesh = (pos, mat, order, isLine) => {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      const o = isLine ? new THREE.LineSegments(g, mat) : new THREE.Mesh(g, mat);
+      o.renderOrder = order;
+      this.globe.add(o);
+    };
+    mesh(fill, this.landMat, 1); mesh(krFill, this.krLandMat, 1);
+    mesh(lines, this.edgeMat, 2, true); mesh(krLines, this.krEdgeMat, 3, true);
+  }
+
   /* ---------------- 매장 카드 ---------------- */
   pickStore(s) {
     if (!s || this.selected === s) return;
@@ -234,7 +300,6 @@ export class StoresSection extends BaseSection {
     const d = this.dom;
     d.cardName.textContent = s.name;
     d.cardAddr.textContent = s.addr;
-    d.cardLink.href = s.url;
     d.pins.forEach((b) => b.classList.toggle('is-sel', b.dataset.id === s.id));
   }
 
@@ -306,8 +371,9 @@ export class StoresSection extends BaseSection {
     d.grid.classList.toggle('is-family', fam > 0.5);
 
     // ---- 지구본 ----
-    const globeOn = reveal < 1;
-    this.tilt.visible = this.face.visible = globeOn;
+    const globeOn = fam < 1; // 확대가 끝나도 한반도 선은 3D 그대로 남아 지도가 됨
+    this.tilt.visible = globeOn;
+    this.face.visible = reveal < 1;
     this.camera.near = 0.01;
     if (turn <= 0) {
       this.from = null;
@@ -343,9 +409,10 @@ export class StoresSection extends BaseSection {
     this.face.position.copy(this.tilt.position);
     this.face.scale.setScalar(s / Math.sqrt(Math.max(0.05, 1 - ((R * s) / camD) ** 2))); // 원근 보정
 
-    const globeFade = 1 - ease.inOut(seg(reveal, 0.55, 0.95)); // 확대 끝에서 지구본 → 한반도 라인 지도
-    this.landMat.opacity = grow * globeFade;
-    this.gratMat.opacity = grow * globeFade;
+    const globeFade = 1 - ease.inOut(seg(reveal, 0.55, 0.95)); // 확대 끝: 바다·대륙 면·경위선은 사라지고 한반도 선만
+    this.oceanMat.opacity = this.landMat.opacity = this.krLandMat.opacity = grow * globeFade;
+    this.edgeMat.opacity = this.gratMat.opacity = grow * globeFade;
+    this.krEdgeMat.opacity = grow;
     this.rimMat.opacity = wire * (1 - reveal);
     this.ovalMat.opacity = wire * (1 - grow);
     const pinsUp = ease.out(seg(pin, T.grow[0] + 0.03, T.grow[1]));
@@ -369,7 +436,7 @@ export class StoresSection extends BaseSection {
     } else {
       d.map.style.transform = '';
     }
-    d.reveal.style.opacity = ease.inOut(seg(reveal, 0.4, 0.85)).toFixed(3);
+    d.reveal.style.opacity = '1'; // 매장 네모만 담는 층
     d.reveal.style.visibility = reveal > 0 && fam < 1 ? 'visible' : 'hidden';
 
     // ---- 평면 지도 (시안 4·5번) ----
