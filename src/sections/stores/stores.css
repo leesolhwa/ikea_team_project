@@ -1,28 +1,167 @@
-/* STORES 전용 스타일 — 모든 선택자는 .sec-stores 로 시작합니다 */
-.sec-stores .stores-head { position: absolute; left: 6vw; top: 10vh; display: grid; gap: 10px; pointer-events: none; }
-.sec-stores .stores-head h2 { font-size: clamp(32px, 5vw, 76px); font-weight: 800; line-height: .95; letter-spacing: -.02em; color: #8a857a; }
-.sec-stores .stores-head h2 em { font-style: normal; color: #7fa6c9; }
+/* STORE & FAMILY 전용 스타일 — 모든 선택자는 .sec-stores 로 시작합니다.
+   시안(1920×1080) 좌표를 그대로 쓰기 위해 --u(가로 1px), --v(세로 1px), --f(글자 1px) 단위를 씁니다. */
+@import url('https://fonts.googleapis.com/css2?family=Alexandria:wght@100..900&family=Inter:wght@400;500;600&family=Noto+Sans+KR:wght@400;600&display=swap');
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
-.sec-stores .stores-tip {
-  position: absolute; left: 0; top: 0; width: 200px; padding: 10px; display: grid; gap: 6px;
-  background: #fff; border: 1px solid var(--ink); pointer-events: none; z-index: 2;
+.sec-stores {
+  --u: calc(100vw / 1920);
+  --v: calc(100vh / 1080);
+  --f: min(var(--u), var(--v));
+  --navy: #000c44;
+  --ivory: #fcfaf6;
+  --rule: #e6e3dd;        /* Color/Neutral/Gray20 — 격자선 (연하게) */
+  --rule-strong: #e6e3dd;
+  --blue: #0c3494;        /* Color/Primary/Blue */
+  --sans: 'Pretendard', 'Inter', 'Noto Sans KR', system-ui, sans-serif;
+  --display: 'Alexandria', 'Pretendard', 'Inter', sans-serif;
+  color: var(--navy);
+  font-family: var(--sans);
 }
-.sec-stores .stores-tip[hidden] { display: none; }
-.sec-stores .stores-tip img { aspect-ratio: 4 / 3; }
+.sec-stores .sf-layer { position: absolute; inset: 0; pointer-events: none; }
 
-.sec-stores .stores-family {
-  position: absolute; inset: 0; padding: 12vh 8vw; overflow: hidden;
-  display: grid; grid-template-columns: 1fr 1.2fr; grid-template-rows: auto auto 1fr; column-gap: 5vw; align-content: start;
-  background: var(--yellow); transform: translateY(100%); will-change: transform;
+/* ---------- 가는 격자선 ---------- */
+.sec-stores .sf-grid { z-index: 0; }
+/* 격자선 층: JS 가 3D 캔버스 바로 아래로 옮김 → 지구본·지도·사진·글자 모두 선 위에 그려짐 */
+.sf-under.sec-stores { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.sec-stores .sf-h, .sec-stores .sf-vl { position: absolute; background: var(--rule); transition: background .4s; }
+.sec-stores .sf-grid.is-family .sf-h, .sec-stores .sf-grid.is-family .sf-vl { background: var(--rule-strong); }
+.sec-stores .sf-h { left: 0; right: 0; height: 1px; }
+.sec-stores .sf-h.top { top: calc(95 * var(--v)); }
+.sec-stores .sf-h.mid { top: calc(574 * var(--v)); }
+.sec-stores .sf-vl { top: 0; bottom: 0; width: 1px; left: 0; will-change: transform, opacity; }
+
+/* ---------- 상단 진행 바 ---------- */
+.sec-stores .sf-nav { z-index: 4; }
+.sec-stores .sf-nav button {
+  position: absolute; top: calc(58 * var(--v)); padding: 0 0 calc(30 * var(--v)); border: 0; background: none;
+  font: 400 calc(20 * var(--f)) / 1.1 var(--display); letter-spacing: -0.05em; text-transform: uppercase; color: var(--navy);
+  cursor: pointer; pointer-events: auto; opacity: .55; transition: opacity .3s;
 }
-.sec-stores .stores-family h3 { font-size: clamp(64px, 11vw, 170px); font-weight: 800; letter-spacing: -.04em; line-height: 1; }
-.sec-stores .stores-family-sub { grid-column: 1; font-size: clamp(18px, 2.2vw, 30px); font-weight: 700; margin-top: 12px; }
-.sec-stores .stores-family ul { grid-column: 2; grid-row: 1 / 4; align-self: end; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.sec-stores .stores-family li { display: grid; gap: 8px; padding-bottom: 14px; background: #fff; }
-.sec-stores .stores-family li img { aspect-ratio: 4 / 3; }
-.sec-stores .stores-family li strong, .sec-stores .stores-family li span { padding: 0 14px; }
+.sec-stores .sf-nav button::after {
+  content: ''; position: absolute; left: 0; top: calc(27 * var(--v)); width: 2px; height: calc(20 * var(--v)); background: var(--navy);
+}
+.sec-stores .sf-nav button.is-on, .sec-stores .sf-nav button:hover { opacity: 1; }
+.sec-stores .sf-nav.is-family button { font-size: calc(16 * var(--f)); }
+.sec-stores .sf-nav button:focus-visible { outline: 2px solid var(--navy); outline-offset: 4px; }
+.sec-stores .sf-navbg { position: absolute; left: 0; right: 0; top: 0; height: calc(95 * var(--v)); background: var(--ivory); }
+.sec-stores .sf-bar {
+  position: absolute; left: 0; top: calc(93 * var(--v)); height: 3px; width: calc(559 * var(--u));
+  background: var(--navy); will-change: width;
+}
+
+/* ---------- STORE / WORLDWIDE · KOREA 타이틀 ---------- */
+.sec-stores .sf-titles { z-index: 6; } /* 격자선보다 위: 선이 글자를 가리지 않게 */
+.sec-stores .sf-word {
+  position: absolute; left: 0; top: calc(573 * var(--v)); margin: 0;
+  font: 400 calc(96 * var(--f)) / 1.2 var(--sans); letter-spacing: -0.05em; text-transform: uppercase; white-space: nowrap;
+  transform-origin: 0 50%; will-change: transform, opacity;
+}
+.sec-stores .sf-word .alt { position: absolute; left: 0; top: 0; opacity: 0; }
+
+/* ---------- 매장 카드 (시안 위치: 세로선 560 · 가운데 선 옆). 매장 점에 마우스를 올렸을 때만 ---------- */
+.sec-stores .sf-card {
+  position: absolute; z-index: 4; left: calc(560 * var(--u)); top: calc(548 * var(--v)); width: calc(467 * var(--u));
+  min-width: 260px; display: grid; gap: calc(28 * var(--f)); justify-items: start; color: var(--navy);
+  opacity: 0; transform: translateY(8px); transition: opacity .3s, transform .3s; pointer-events: none;
+}
+.sec-stores .sf-card.is-on { opacity: 1; transform: none; pointer-events: auto; }
+.sec-stores .sf-card h3 { margin: 0; font: 600 max(20px, calc(28 * var(--f))) / 1.2 var(--sans); letter-spacing: -0.05em; }
+.sec-stores .sf-card p { margin: 8px 0 0; font: 400 max(14px, calc(16 * var(--f))) / 1.4 var(--sans); letter-spacing: -0.05em; }
+
+/* 한반도 지도 층 (지구본 확대에 맞춰 커지며 나타남) */
+.sec-stores .sf-reveal { position: absolute; inset: 0; z-index: 1; visibility: hidden; opacity: 0; overflow: hidden; }
+/* ---------- 한반도 지도 (지구본 스타일, 3000×1400 — 크기·위치는 JS resize 에서 화면을 꽉 채우게 맞춤) ---------- */
+.sec-stores .sf-map { position: absolute; z-index: 1; margin: 0; aspect-ratio: 3000 / 1400; pointer-events: none; will-change: transform; }
+.sec-stores .sf-map.is-on { pointer-events: auto; }
+.sec-stores .sf-dots { position: absolute; inset: 0; }
+/* 평면 한반도 선: 평소엔 숨김, 매장을 누르면 3D 선 대신 보이며 매장 점 쪽으로 확대됨 (선 굵기는 확대해도 1px) */
+.sec-stores .sf-krsvg { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; overflow: visible; pointer-events: none; }
+.sec-stores .sf-krsvg path { fill: none; stroke: #b2aea7; stroke-width: 1px; vector-effect: non-scaling-stroke; }
+
+/* 매장 표시 (R2): 작은 점 + 연한 원. 정규 매장 = 남색 60%(회색 지도 위에서 뜨지 않게), 팝업 매장 = 노랑. 고른 매장만 진하게 */
+.sec-stores { --pc: #0c3494; --pg: rgba(12, 52, 148, .16); } /* 매장 점: 팔레트 Blue */
+.sec-stores .is-popup { --pc: #ffc800; --pg: rgba(255, 200, 0, .28); }
+.sec-stores .sf-pin {
+  --pop: 0; --a: .85;
+  position: absolute; width: 7px; height: 7px; padding: 0; border: 0; border-radius: 50%; background: var(--pc); cursor: pointer;
+  box-shadow: 0 0 0 3.5px var(--pg); opacity: calc(var(--pop) * var(--a));
+  transform: translate(-50%, -50%) scale(calc(0.4 + 0.6 * var(--pop))); transition: box-shadow .25s, opacity .25s;
+}
+.sec-stores .sf-pin.is-popup { --a: 1; }
+.sec-stores .sf-pin::before { content: ''; position: absolute; inset: -14px; border-radius: 50%; } /* 누르기 쉬운 영역 */
+.sec-stores .sf-pin i { display: none; }
+.sec-stores .sf-pin:hover, .sec-stores .sf-pin:focus-visible, .sec-stores .sf-pin.is-sel { --a: 1; outline: none; box-shadow: 0 0 0 6px var(--pg); }
+
+/* ---------- IKEA FAMILY ---------- */
+.sec-stores .sf-family {
+  position: absolute; inset: 0; z-index: 3; overflow: hidden;
+  transform: translateY(100%); will-change: transform; pointer-events: none;
+}
+.sec-stores .sf-family.is-on { pointer-events: auto; }
+.sec-stores .sf-offers {
+  position: absolute; left: calc(260 * var(--u)); top: calc(244 * var(--v)); margin: 0;
+  font: 400 calc(24 * var(--f)) / 1.2 var(--sans); letter-spacing: -0.05em; text-transform: uppercase;
+}
+.sec-stores .sf-photo {
+  /* 사진: 세로선 250 ~ 960 사이, 가운데 선 아래 칸 안에 */
+  position: absolute; left: calc(250 * var(--u)); top: calc(574 * var(--v)); width: calc(710 * var(--u)); height: calc(506 * var(--v)); margin: 0;
+  overflow: hidden; clip-path: inset(0 100% 0 0); will-change: clip-path;
+}
+.sec-stores .sf-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transition: opacity .5s ease; }
+.sec-stores .sf-photo img.is-on { opacity: 1; } /* SPECIAL 줄에 온 혜택 사진만 보임 */
+.sec-stores .sf-special, .sec-stores .sf-list li {
+  margin: 0; font-family: var(--display); font-size: calc(128 * var(--f)); line-height: calc(156 * var(--f));
+  letter-spacing: -0.05em; text-transform: uppercase; white-space: nowrap;
+}
+.sec-stores .sf-special {
+  /* 사진 바로 위 (글자 아래끝 = 가운데 선 574) */
+  position: absolute; left: calc(464 * var(--u)); top: calc(574 * var(--v) - 156 * var(--f)); font-weight: 600; z-index: 2; will-change: transform;
+}
+.sec-stores .sf-list {
+  /* 굵게 되는 줄이 SPECIAL 과 같은 높이 */
+  position: absolute; left: calc(1002 * var(--u)); top: calc(576 * var(--v) - 156 * var(--f)); margin: 0; padding: 0; list-style: none;
+  display: grid; gap: calc(10 * var(--f));
+}
+.sec-stores .sf-list li { font-weight: 200; will-change: transform; }
+
+/* ---------- 매장 동네 3D 지도 (매장 점 클릭) ---------- */
+.sec-stores .sf-city { position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0; }
+.sec-stores .sf-city > span { position: absolute; left: 0; top: 0; }
+.sec-stores .sf-st {
+  display: flex; align-items: center; gap: 6px; margin: -7px 0 0 -6px;
+  font: 500 14px/1 var(--sans); letter-spacing: -0.02em; color: var(--navy); white-space: nowrap;
+}
+.sec-stores .sf-st i { width: 8px; height: 8px; border: 1.5px solid var(--navy); border-radius: 50%; background: var(--ivory); }
+.sec-stores .sf-cpin {
+  --pc: #0c3494; --pg: rgba(12, 52, 148, .16);
+  width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: var(--pc);
+  box-shadow: 0 0 0 7px var(--pg), 0 0 0 18px rgba(12, 52, 148, .07);
+}
+.sec-stores .sf-cpin.is-popup { --pc: #ffc800; --pg: rgba(255, 200, 0, .28); box-shadow: 0 0 0 7px var(--pg), 0 0 0 18px rgba(255, 200, 0, .12); }
+.sec-stores .sf-close {
+  position: absolute; z-index: 7; right: calc(60 * var(--u)); top: calc(130 * var(--v));
+  display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0; border: 0; background: none; cursor: pointer;
+  font: 400 14px/1 var(--display); text-transform: uppercase; letter-spacing: -0.02em; color: var(--navy);
+  opacity: 0; pointer-events: none; transition: opacity .4s;
+}
+.sec-stores .sf-close.is-on { opacity: 1; pointer-events: auto; }
+.sec-stores .sf-close i { position: relative; width: 16px; height: 16px; }
+.sec-stores .sf-close i::before, .sec-stores .sf-close i::after {
+  content: ''; position: absolute; left: 50%; top: 50%; width: 18px; height: 1.5px; background: var(--navy);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.sec-stores .sf-close i::after { transform: translate(-50%, -50%) rotate(-45deg); }
+.sec-stores .sf-osm {
+  position: absolute; z-index: 7; right: 20px; bottom: 16px; margin: 0; opacity: 0; pointer-events: none;
+  font: 400 11px/1 var(--sans); color: #8a8a86;
+}
 
 @media (max-width: 760px) {
-  .sec-stores .stores-family { grid-template-columns: 1fr; }
-  .sec-stores .stores-family ul { grid-column: 1; grid-row: auto; margin-top: 24px; }
+  .sec-stores .sf-card { left: 20px; right: 20px; width: auto; top: auto; bottom: 90px; }
+  .sec-stores { --u: calc(100vw / 1100); --f: calc(100vw / 1100); }
+  .sec-stores .sf-nav button { font-size: 10px; }
+  .sec-stores .sf-list { left: calc(500 * var(--u)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sec-stores .sf-card { transition: none; }
 }
