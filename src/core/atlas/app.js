@@ -1,6 +1,6 @@
 const $=s=>document.getElementById(s);
 const rooms=[
-  {id:'about',name:'About',ko:'거실',text:'왼쪽 거실에서 탐색을 시작합니다. 소파와 낮은 테이블 너머로 안쪽 전시 공간이 이어집니다.',items:['소파와 플로어 램프가 놓인 휴식 공간','창가를 따라 이어지는 작은 좌석들']},
+  {id:'about',name:'About',ko:'거실',page:'./src/sections/about/about-ikea.html',text:'왼쪽 거실에서 탐색을 시작합니다. 소파와 낮은 테이블 너머로 안쪽 전시 공간이 이어집니다.',items:['소파와 플로어 램프가 놓인 휴식 공간','창가를 따라 이어지는 작은 좌석들']},
   {id:'ikea-ps',name:'IKEA PS',ko:'컬렉션 전시실',page:'./src/sections/collection/collection.html',text:'거실 뒤편의 전시실입니다. 선반 앞에는 휜 합판으로 좌석과 등받이를 연결한 의자가 놓여 있습니다.',items:['벽면을 따라 놓인 오픈 선반','낮은 전시대 위의 의자와 조명']},
   {id:'3d-room',name:'3D room',ko:'침실',page:'./src/sections/rooms/room3d.html',text:'중앙 통로에서 안쪽으로 들어온 침실입니다. 반쯤 열린 미닫이문 사이로 침대와 협탁이 보입니다.',items:['낮은 침대와 패브릭 침구','침대 옆 협탁과 조명']},
   {id:'store-family',name:'Store & Family',ko:'패밀리 라운지',page:'./src/sections/stores/store-family.html',text:'도면 오른쪽 앞에 자리한 라운지입니다. 좌석 옆 랙에는 이케아 매장을 그린 매거진이 꽂혀 있고, 옆 출입구를 지나면 다이닝으로 이어지는 복도에 닿습니다.',items:['매장 안내와 IKEA Family를 담은 매거진','라운지 좌석 옆의 독서등']},
