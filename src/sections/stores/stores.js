@@ -208,7 +208,7 @@ export class StoresSection extends BaseSection {
     });
     this.dom.navBtns.forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); this.closeCity(); this.ctx.scroll.scrollTo(+b.dataset.go); }));
     this.dom.close.addEventListener('click', (e) => { e.stopPropagation(); this.closeCity(); });
-    this.onKey = (e) => { if (e.key === 'Escape' && this.cityOn) { e.stopPropagation(); this.closeCity(); } };
+    this.onKey = (e) => { if (e.key === 'Escape' && this.cityOn) { e.preventDefault(); e.stopPropagation(); this.closeCity(); } // 창 닫기보다 먼저: 지도로만 돌아감 };
     // 격자선은 항상 콘텐츠 뒤 배경: 3D 캔버스보다도 아래층으로 옮김 (같은 .sec-stores 변수·스타일을 쓰도록 감싸서)
     this.under = document.createElement('div');
     this.under.className = 'sec-stores sf-under';
