@@ -242,3 +242,26 @@ function playOpeningCards() {
 onresize = move;
 displayFrame(0, false, true);
 playOpeningCards();
+
+// 나가기 아이콘: 상세 전시에서는 컬렉션 목록으로, 목록에서는 메인으로 돌아갑니다.
+const exitIcons = '[data-name="iconamoon:exit-thin"]';
+for (const icon of document.querySelectorAll(exitIcons)) {
+  icon.setAttribute("role", "button");
+  icon.tabIndex = 0;
+  icon.setAttribute("aria-label", "나가기");
+  icon.style.cursor = "pointer";
+}
+function exitToMain() {
+  const main = new URL("../../../", location.href).pathname;
+  const from = document.referrer && new URL(document.referrer);
+  // 메인에서 들어왔으면 뒤로 가기로 돌아가 메인의 원래 위치를 유지합니다.
+  if (from && from.origin === location.origin && (from.pathname === main || from.pathname === main + "index.html")) history.back();
+  else location.href = "../../../index.html";
+}
+addEventListener("click", e => {
+  if (!e.target.closest(exitIcons)) return;
+  e.preventDefault();
+  e.stopPropagation();
+  if (detail) show(current, false);
+  else exitToMain();
+}, true);
