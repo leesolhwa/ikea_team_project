@@ -56,7 +56,7 @@
 }
 .sec-stores .sf-word .alt { position: absolute; left: 0; top: 0; opacity: 0; }
 
-/* ---------- 매장 카드 (시안 위치: 세로선 560 · 가운데 선 옆). 매장 네모에 마우스를 올렸을 때만 ---------- */
+/* ---------- 매장 카드 (시안 위치: 세로선 560 · 가운데 선 옆). 매장 점에 마우스를 올렸을 때만 ---------- */
 .sec-stores .sf-card {
   position: absolute; z-index: 4; left: calc(560 * var(--u)); top: calc(548 * var(--v)); width: calc(467 * var(--u));
   min-width: 260px; display: grid; gap: calc(28 * var(--f)); justify-items: start; color: var(--navy);
@@ -73,15 +73,15 @@
 .sec-stores .sf-map.is-on { pointer-events: auto; }
 .sec-stores .sf-dots { position: absolute; inset: 0; }
 
-/* 매장 표시: 남색 네모 (팝업 매장은 노랑). 지구본 나라 표시와 같은 모양 */
+/* 매장 표시: 남색 점 (팝업 매장은 노랑). 지구본 나라 표시와 같은 모양 */
 .sec-stores { --pc: #000c44; }
 .sec-stores .is-popup { --pc: #ffc800; }
 .sec-stores .sf-pin {
   --pop: 0;
-  position: absolute; width: 12px; height: 12px; padding: 0; border: 0; background: var(--pc); cursor: pointer;
+  position: absolute; width: 12px; height: 12px; padding: 0; border: 0; border-radius: 50%; background: var(--pc); cursor: pointer;
   opacity: var(--pop); transform: translate(-50%, -50%) scale(calc(0.4 + 0.6 * var(--pop))); transition: box-shadow .2s;
 }
-.sec-stores .sf-pin::before { content: ''; position: absolute; inset: -12px; } /* 누르기 쉬운 영역 */
+.sec-stores .sf-pin::before { content: ''; position: absolute; inset: -12px; border-radius: 50%; } /* 누르기 쉬운 영역 */
 .sec-stores .sf-pin i { display: none; }
 .sec-stores .sf-pin:hover, .sec-stores .sf-pin:focus-visible, .sec-stores .sf-pin.is-sel { outline: none; box-shadow: 0 0 0 3px var(--ivory), 0 0 0 4px var(--pc); }
 

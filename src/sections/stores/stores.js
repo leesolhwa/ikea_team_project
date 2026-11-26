@@ -2,10 +2,10 @@
 //
 // 스크롤 흐름 (구간 값은 아래 T 에서 한 번에 조정)
 //  1. 타이틀      STORE WORLDWIDE → 글자가 벌어지며 선 지구본(원 + 세로 타원)
-//  2. 지구본      noart 레퍼런스 지구본(경위선 + 회색 대륙), 매장이 있는 나라마다 남색 네모, 제자리 자전 (지구본 클릭 = 바로 한반도로)
+//  2. 지구본      noart 레퍼런스 지구본(경위선 + 회색 대륙), 매장이 있는 나라마다 남색 점, 제자리 자전 (지구본 클릭 = 바로 한반도로)
 //  3. 전환        한반도를 정면으로 돌린 뒤 그대로 확대 (지도 전체를 코드로 그려서 확대해도 깨지지 않음)
 //                 대륙 면·경위선은 사라지고 한반도 해안선·도 경계선만 남아 라인 지도가 됨
-//  4. 한반도 지도  해안선·도 경계선 라인 + 매장 네모 (서울 하나 → 전체). 네모에 마우스 = 시안 매장 카드
+//  4. 한반도 지도  해안선·도 경계선 라인 + 매장 점 (서울 하나 → 전체). 점에 마우스 = 시안 매장 카드
 //  5. FAMILY      시안 FAMILY 화면, 오른쪽 단어 목록이 위로 흐름 (santalarch 방식)
 import * as THREE from 'three';
 import { BaseSection } from '../../core/BaseSection.js';
@@ -64,6 +64,18 @@ function yawFor(lat, lon) {
   const v = latLonToVec3(lat, lon, 1);
   return -Math.atan2(v.x, v.z);
 }
+/** 동그란 점 텍스처 (지구본 매장 표시) */
+const DOT = (() => {
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d');
+  g.fillStyle = '#fff';
+  g.beginPath(); g.arc(32, 32, 30, 0, Math.PI * 2); g.fill();
+  const t = new THREE.CanvasTexture(c);
+  t.generateMipmaps = false;
+  t.minFilter = THREE.LinearFilter;
+  return t;
+})();
 const byId = (id) => STORES.find((s) => s.id === id);
 const shortName = (s) => s.name.replace(/^이케아 (팝업 )?/, '');
 
@@ -214,11 +226,11 @@ export class StoresSection extends BaseSection {
     this.gratMat = new THREE.LineBasicMaterial({ color: C.grat, transparent: true, opacity: 0 });
     this.globe.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(grat), this.gratMat));
 
-    // 매장 표시: 매장이 있는 나라마다 남색 네모 하나 (한국은 조금 크게). 점은 화면 px 크기라 확대해도 그대로
+    // 매장 표시: 매장이 있는 나라마다 남색 점 하나 (한국은 조금 크게). 점은 화면 px 크기라 확대해도 그대로
     const marks = (list, size) => {
       const geo = new THREE.BufferGeometry();
       geo.setAttribute('position', new THREE.Float32BufferAttribute(list.flatMap(([lat, lon]) => latLonToVec3(lat, lon, R * 1.003).toArray()), 3));
-      const m = new THREE.PointsMaterial({ size, sizeAttenuation: false, color: C.navy, transparent: true, opacity: 0, depthWrite: false });
+      const m = new THREE.PointsMaterial({ size, sizeAttenuation: false, color: C.navy, map: DOT, alphaTest: 0.5, transparent: true, opacity: 0, depthWrite: false });
       const o = new THREE.Points(geo, m);
       o.renderOrder = 3;
       this.globe.add(o);
@@ -436,12 +448,12 @@ export class StoresSection extends BaseSection {
     } else {
       d.map.style.transform = '';
     }
-    d.reveal.style.opacity = '1'; // 매장 네모만 담는 층
+    d.reveal.style.opacity = '1'; // 매장 점만 담는 층
     d.reveal.style.visibility = reveal > 0 && fam < 1 ? 'visible' : 'hidden';
 
     // ---- 평면 지도 (시안 4·5번) ----
     d.map.classList.toggle('is-on', pin > T.first[0] + 0.01 && pin < T.family[0] + 0.01);
-    // 4번에서는 서울(강동) 네모 하나만, 5번에서 나머지가 차례로
+    // 4번에서는 서울(강동) 점 하나만, 5번에서 나머지가 차례로
     d.pins.forEach((b, i) => {
       const a = b.dataset.id === FIRST ? at(pin, T.first) : seg(pin, T.dim[0] + (i % 6) * 0.006, T.dim[0] + 0.03 + (i % 6) * 0.006);
       b.style.setProperty('--pop', ease.out(a).toFixed(3));
