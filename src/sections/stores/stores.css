@@ -107,7 +107,8 @@
   position: absolute; left: calc(250 * var(--u)); top: calc(574 * var(--v)); width: calc(710 * var(--u)); height: calc(506 * var(--v)); margin: 0;
   overflow: hidden; clip-path: inset(0 100% 0 0); will-change: clip-path;
 }
-.sec-stores .sf-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sec-stores .sf-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transition: opacity .5s ease; }
+.sec-stores .sf-photo img.is-on { opacity: 1; } /* SPECIAL 줄에 온 혜택 사진만 보임 */
 .sec-stores .sf-special, .sec-stores .sf-list li {
   margin: 0; font-family: var(--display); font-size: calc(128 * var(--f)); line-height: calc(156 * var(--f));
   letter-spacing: -0.05em; text-transform: uppercase; white-space: nowrap;

@@ -17,7 +17,8 @@ import { STORES, FAMILY } from './data.js';
 const FILES = {
   world: new URL('./data/world.json', import.meta.url).href, // 세계 나라 경계 (Natural Earth 1:50m, 한국·북한 제외, 0.05도 단위 차분 부호화)
   korea: new URL('./data/korea.json', import.meta.url).href, // 한반도 해안선(남해 섬 정리) + 도 경계선 (0.001도 단위 차분 부호화)
-  family: 'assets/images/stores/family-billy.webp', // 시안 FAMILY 사진
+  // FAMILY 혜택마다 사진 (FAMILY 목록 순서와 같게: PRICE, HEJ POINT, FOOD, PRESENT, 2 WEEK SERVICE, EVENT, STYLING)
+  family: ['price', 'hej', 'food', 'present', 'service', 'event', 'styling'].map((f) => `assets/images/stores/family/${f}.webp`),
   // 매장 동네 3D 지도 데이터 (매장마다 한 파일, 누를 때만 불러옴)
   // © OpenStreetMap contributors (ODbL). 매장 중심 기준 m 단위 차분 부호화. 다시 받는 방법은 README 참고
   city: (id) => new URL(`./data/city/${id}.json`, import.meta.url).href,
@@ -133,7 +134,7 @@ export class StoresSection extends BaseSection {
 
       <section class="sf-family" aria-label="IKEA Family 혜택">
         <p class="sf-offers">Store offers<br />IKEA Family</p>
-        <figure class="sf-photo"><img src="${FILES.family}" alt="BILLY 책장 조립 설명서와 부품" /></figure>
+        <figure class="sf-photo">${FILES.family.map((src, i) => `<img src="${src}" alt="${FAMILY[i]} 혜택 사진" class="${i ? '' : 'is-on'}" />`).join('')}</figure>
         <h3 class="sf-special">Special</h3>
         <ul class="sf-list">${list}</ul>
       </section>
@@ -174,7 +175,7 @@ export class StoresSection extends BaseSection {
       reveal: this.$('.sf-reveal'), map: this.$('.sf-map'), krsvg: this.$('.sf-krsvg'), dots: this.$('.sf-dots'),  pins: this.$$('.sf-pin'),
       card: this.$('.sf-card'), cardName: this.$('.sf-card h3'), cardAddr: this.$('.sf-card p'),
       city: this.$('.sf-city'), close: this.$('.sf-close'), osm: this.$('.sf-osm'),
-      family: this.$('.sf-family'), photo: this.$('.sf-photo'), special: this.$('.sf-special'), words: this.$$('.sf-list li'),
+      family: this.$('.sf-family'), photo: this.$('.sf-photo'), photos: this.$$('.sf-photo img'), special: this.$('.sf-special'), words: this.$$('.sf-list li'),
     };
 
     this.camera.fov = FOV;
@@ -668,6 +669,9 @@ export class StoresSection extends BaseSection {
     // SPECIAL 줄에 온 단어만 왼쪽 끝(시안 자리)에 닿아 굵어지고, 줄 아래·위 단어는 같은 반원을 따라 오른쪽으로 비켜남
     const ARC = { w: 520, rows: 4.5, show: 3.2 }; // 반원 폭(시안 px) · 반원 끝까지의 줄 수(클수록 완만) · 보이는 줄 수
     const k = ease.inOut(at(pin, T.list)) * (FAMILY.length - 1);
+    // SPECIAL 줄에 온 혜택의 사진으로 바뀜
+    const cur = Math.round(k);
+    d.photos.forEach((im, i) => im.classList.toggle('is-on', i === cur));
     d.words.forEach((w, i) => {
       const rel = i - k;
       const u = Math.min(1, Math.abs(rel) / ARC.rows);
