@@ -64,7 +64,7 @@
   min-width: 260px; display: grid; gap: calc(28 * var(--f)); justify-items: start; color: var(--navy);
   opacity: 0; transform: translateY(8px); transition: opacity .3s, transform .3s; pointer-events: none;
 }
-.sec-stores .sf-card.is-on { opacity: 1; transform: none; pointer-events: auto; }
+.sec-stores .sf-card.is-on { opacity: 1; transform: none; } /* 카드가 아래 매장 점을 가려도 클릭은 점으로 */
 .sec-stores .sf-card h3 { margin: 0; font: 600 max(20px, calc(28 * var(--f))) / 1.2 var(--sans); letter-spacing: -0.05em; }
 .sec-stores .sf-card p { margin: 8px 0 0; font: 400 max(14px, calc(16 * var(--f))) / 1.4 var(--sans); letter-spacing: -0.05em; }
 
@@ -90,14 +90,12 @@
 .sec-stores .sf-pin.is-popup { --a: 1; }
 .sec-stores .sf-dots { --pop: 0; }
 .sec-stores .sf-pin::before { content: ''; position: absolute; inset: -15px; border-radius: 50%; } /* 누르는 영역: 지름 40px */
-/* 위치 표시 물결: 점이 다 나타난 뒤 2.4초마다 바깥으로 퍼짐 */
+/* 위치 표시 물결: 마우스를 올린(또는 고른) 점에만 퍼짐 */
 .sec-stores .sf-pin::after {
   content: ''; position: absolute; inset: 0; border-radius: 50%; border: 1.5px solid var(--pc);
   opacity: 0; pointer-events: none;
 }
-.sec-stores .sf-dots.is-live .sf-pin::after { animation: sf-ping 2.4s ease-out infinite; }
-.sec-stores .sf-dots.is-live .sf-pin:nth-child(3n+2)::after { animation-delay: .8s; }
-.sec-stores .sf-dots.is-live .sf-pin:nth-child(3n)::after { animation-delay: 1.6s; }
+.sec-stores .sf-pin:hover::after, .sec-stores .sf-pin:focus-visible::after, .sec-stores .sf-pin.is-sel::after { animation: sf-ping 1.6s ease-out infinite; }
 @keyframes sf-ping { 0% { transform: scale(1); opacity: .8; } 100% { transform: scale(4.2); opacity: 0; } }
 .sec-stores .sf-pin i { display: none; }
 .sec-stores .sf-pin:hover, .sec-stores .sf-pin:focus-visible, .sec-stores .sf-pin.is-sel { --a: 1; outline: none; box-shadow: 0 0 0 7px var(--pg); }
@@ -149,8 +147,8 @@
 }
 .sec-stores .sf-cpin.is-popup { --pc: #ffc800; --pg: rgba(255, 200, 0, .28); box-shadow: 0 0 0 7px var(--pg), 0 0 0 18px rgba(255, 200, 0, .12); }
 .sec-stores .sf-close {
-  /* 동네 지도 동안: 맨 왼쪽 위 나가기(↤) 자리에 '× 지도로 돌아가기' */
-  position: absolute; z-index: 11; left: clamp(12px, 2vw, 40px); top: calc(48 * var(--v));
+  /* 페이지 안쪽: 메뉴 줄(나중에 공통 헤더 자리) 아래 왼쪽, STORE 글자 세로줄 */
+  position: absolute; z-index: 7; left: calc(115 * var(--u)); top: calc(130 * var(--v));
   display: flex; flex-direction: row-reverse; align-items: center; gap: 10px; min-height: 44px; padding: 0; border: 0; background: none; cursor: pointer;
   font: 400 14px/1 var(--display); text-transform: uppercase; letter-spacing: -0.02em; color: var(--navy);
   opacity: 0; pointer-events: none; transition: opacity .4s;
@@ -175,5 +173,5 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .sec-stores .sf-card { transition: none; }
-  .sec-stores .sf-dots.is-live .sf-pin::after { animation: none; }
+  .sec-stores .sf-pin::after { animation: none !important; }
 }

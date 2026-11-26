@@ -546,10 +546,10 @@ export class StoresSection extends BaseSection {
     const t = Math.tan(THREE.MathUtils.degToRad(FOV / 2));
     this.D0 = Math.max((2 * R) / (0.741 * 2 * t), (2 * R) / (0.417 * 2 * t * (w / h)));
     this.vw = w; this.vh = h;
-    // 한반도 지도: 메뉴 아래 높이에 남한(제주 포함)이 다 들어가게, 지도 이미지는 화면을 꽉 채움
     const nav = (96 / 1080) * h;
-    const k = Math.min((h - nav) / 1010, w / 1150);
-    const cx = (936 / 1920) * w, cy = nav + 392 * k;
+    // 남한 본토(서울 위 ~ 부산·광주 아래, 위도 약 3.25도)가 메뉴 아래 높이를 채우게: 수도권 점 사이가 넉넉해 누르기 쉬움 (제주는 아래로 벗어남, 매장 없음)
+    const k = Math.min((h - nav) / 640, w / 900);
+    const cx = (936 / 1920) * w, cy = nav + (h - nav) / 2;
     Object.assign(this.dom.map.style, {
       width: `${MAP.w * k}px`, left: `${cx - MAP.cx * k}px`, top: `${cy - MAP.cy * k}px`,
       transformOrigin: `${(MAP.cx / MAP.w) * 100}% ${(MAP.cy / MAP.h) * 100}%`,
@@ -603,19 +603,22 @@ export class StoresSection extends BaseSection {
     this.tilt.visible = globeOn;
     this.face.visible = reveal < 1;
     this.camera.near = 0.01;
-    if (turn <= 0) {
-      this.from = null;
-      if (pin >= T.spin[0] && pin < T.turn[0]) this.spin -= dt * 0.1; // 유럽 정면에서 출발해 동쪽(한반도 쪽)으로 자전
-    } else if (this.from === null) {
-      this.from = this.spin;
+    // 지구본 회전: 보이는 동안 늘 동쪽(한반도 쪽)으로 천천히 돌고, 스크롤로 한반도 정면까지 이어서 돌아감.
+    // 스크롤은 '목표 각도'만 정하고 실제 각도는 부드럽게 따라가서, 스크롤을 멈춰도 뚝 멈추지 않음
+    const korea = yawFor(KOREA.lat, KOREA.lon);
+    if (turn <= 0) this.from = null;
+    else if (this.from === null) this.from = this.spin; // 한반도로 돌기 시작한 각도
+    const goal = this.from === null ? null : korea + Math.PI * 2 * Math.floor((this.from - korea) / (Math.PI * 2)); // 지금보다 동쪽에 있는 한반도 각도
+    if (pin > T.grow[0] && reveal <= 0) {
+      // 저절로 도는 속도: 한반도로 가는 동안은 점점 줄어 정면에서 멈춤
+      this.spin -= dt * 0.1 * (1 - turn);
+      if (goal !== null) this.spin = Math.max(this.spin, goal);
     }
-    let yaw = this.spin;
-    if (this.from !== null) {
-      const target = yawFor(KOREA.lat, KOREA.lon);
-      // 자전하던 방향 그대로(동쪽) 이어서 한반도 정면까지: 지금 각도보다 작은 쪽의 한반도 각도를 고름
-      const k = Math.floor((this.from - target) / (Math.PI * 2));
-      yaw = lerp(this.from, target + k * Math.PI * 2, turn);
-    }
+    const want = goal === null ? this.spin : lerp(this.spin, goal, turn);
+    if (this.yaw === undefined) this.yaw = want;
+    this.yaw += (want - this.yaw) * (1 - Math.exp(-dt * 5));
+    if (turn >= 1 || reveal > 0) this.yaw = want; // 한반도 확대 중에는 정확히 정면
+    const yaw = this.yaw;
     this.globe.rotation.y = yaw;
     this.tilt.rotation.x = lerp(THREE.MathUtils.degToRad(EUROPE.lat), THREE.MathUtils.degToRad(KOREA.lat), turn);
     const s = lerp(0.27, 1, grow);
@@ -673,7 +676,6 @@ export class StoresSection extends BaseSection {
     this.popK = clamp((this.popK || 0) + (popOn ? 1 : -1) * (dt / 0.45));
     const pk = this.popK, back = 1 + 2.2 * (pk - 1) ** 3 + 1.2 * (pk - 1) ** 2; // 살짝 커졌다 제자리 (ease-out-back)
     d.dots.style.setProperty('--pop', (pk > 0 ? back : 0).toFixed(3));
-    d.dots.classList.toggle('is-live', pk >= 1); // 다 나타난 뒤 위치 표시 물결
     // 매장 카드: 핀에 마우스를 올렸을 때만
     const mapLive = pin > T.first[0] + 0.01 && pin < T.family[0] + 0.01;
     d.card.classList.toggle('is-on', mapLive && !!this.hovering);
