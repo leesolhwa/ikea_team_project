@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IKEA</title><link rel="icon" href="../../../assets/images/common/favicon.ico?v=2" sizes="any"><link rel="icon" type="image/png" sizes="32x32" href="../../../assets/images/common/ikea-icon-32.png?v=2"><link rel="apple-touch-icon" href="../../../assets/images/common/ikea-icon-180.png?v=2">
+<style>html, body { background: #fcfaf6; }</style>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alexandria:wght@100;300;400;500;800&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="about-ikea.css">
+<script>
+  (function () {
+    var c = document.documentElement.classList;
+    c.add(matchMedia('(max-width: 767px)').matches ? 'm' : 'd');
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) c.add('calm');
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; // 들어올 때 항상 맨 위부터
+  })();
+</script>
+</head>
+<body>
+
+<header class="topbar" data-theme="dark">
+  <a class="exit" href="../../../index.html?room=about" aria-label="어바웃 방으로 나가기">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="round"><path d="M17.5007 4.66797H5.83398V21.0013C5.83398 21.6201 6.07982 22.2136 6.5174 22.6512C6.95499 23.0888 7.54848 23.3346 8.16732 23.3346H17.5007M18.6673 10.5013L22.1673 14.0013L18.6673 17.5013M22.1673 14.0013H10.5007"/></svg>
+  </a>
+  <nav>
+    <a href="#" style="--x:16.6667%" aria-current="page">About</a>
+    <a href="#" style="--x:33.3333%">Collection</a>
+    <a href="#" style="--x:49.9593%">3D Room</a>
+    <a href="#" style="--x:66.6667%">S&amp;F_store</a>
+    <a href="../food/restaurant.html" style="--x:83.3333%">Cafe</a>
+  </nav>
+  <i class="line"></i><i class="line progress"></i>
+</header>
+
+<main>
+  <!-- 1~3. 인트로 → 사선 회전 → 띠 전환 (화면 고정) -->
+  <div class="pin pin-a">
+    <section class="stage stage-a">
+      <div class="art">
+        <svg class="lines" viewBox="0 0 1920 1080" aria-hidden="true">
+          <path d="M332.5 -1000V2080"/><path d="M1226.5 -1000V2080"/>
+          <path class="h574" d="M-1000 573.5H2920"/>
+          <path class="diag" d="M-2200 540H4120"/>
+        </svg>
+        <!-- 도는 사선이 경계: 아직 안 지나간 자리엔 앞 글(old), 지나간 자리엔 다음 글(new) -->
+        <div class="layer old"><p class="ingvar" aria-label="Ingvar Kamprad Elmtaryd Agunnaryd"><span class="il"><span><b>I</b><i class="tail">ngvar</i></span></span><span class="il"><span><b>K</b><i class="tail">amprad</i></span></span><span class="il"><span><b>E</b><i class="tail">lmtaryd</i></span></span><span class="il"><span><b>A</b><i class="tail">gunnaryd</i></span></span></p></div>
+        <div class="layer new">
+          <h2 class="brand" aria-label="One brand many companies and many, many people">
+            <span class="ln"><span>ONE BRAND</span></span>
+            <span class="ln"><span>MANY COMPANIES</span></span>
+            <span class="ln"><span>AND MANY, MANY PEOPLE</span></span>
+          </h2>
+          <p class="ko ko-brand">하나의 브랜드,<br>여러 회사,<br>그리고 수많은 사람들.</p>
+        </div>
+      </div>
+      <div class="hero-top" aria-hidden="false">
+        <h1 class="hero"><span class="t-about">ABOUT</span><span class="t-ikea">IKEA</span></h1>
+      </div>
+
+      <!-- 가운데 띠: 벌어지면서 남색 화면이 된다 -->
+      <div class="band" aria-hidden="true">
+        <div class="art">
+          <svg class="lines" viewBox="0 0 1920 1080"><path d="M332.5 -1000V2080"/><path d="M1226.5 -1000V2080"/><path d="M-1000 573.5H2920"/></svg>
+          <h2 class="mission" aria-label="To create a better everyday life for many people"><span class="ml">TO CREATE A BETTER</span><span class="ml">EVERYDAY LIFE</span><span class="ml">FOR MANY PEOPLE</span></h2>
+          <p class="ko ko-mission"><span class="kl">많은 사람들을 위한</span><span class="kl">더 나은 일상을 만듭니다.</span></p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- 4. DEMOCRATIC DESIGN — 빛이 지나가며 선을 그린다 -->
+  <section class="story" data-theme="light">
+    <div class="art story-art">
+      <svg class="lines" viewBox="0 0 1920 4287" aria-hidden="true">
+        <path d="M332.5 -1000V4287"/><path d="M1226.5 -1000V4287"/><path d="M-1000 1839.3H2920"/>
+      </svg>
+      <div class="dd-copy">
+        <h2 class="dd-title">Democratic<br>Design</h2>
+        <p class="dd-body">이 철학은 어느 한 요소만 뛰어난 제품보다 다섯 가지 기준이 함께 충족된 제품을 지향해요.<br>그래서 제품 기획 단계부터 가격과 성능, 사용성, 완성도, 환경 영향을 함께 검토합니다.</p>
+      </div>
+      <div class="label" style="left:1274px;top:1956.2px"><h3>Low price</h3><p>가격 때문에 원하는 제품을 포기하지 않게 하기 위해</p></div>
+      <div class="label" style="left:647px;top:2555.3px"><h3>Design</h3><p>제품의 매력과 개성을 확보하기 위해</p></div>
+      <div class="label" style="left:1065px;top:3150.4px"><h3>Quality</h3><p>쉽게 버려지지 않는 제품을 만들기 위해</p></div>
+      <div class="label" style="left:438px;top:3838.3px"><h3>Function</h3><p>다양한 집과 생활 방식에 대응하기 위해</p></div>
+      <svg class="chain" viewBox="0 0 1920 4287" aria-hidden="true">
+        <!-- 선과 그림: 순서대로 이어진다. data-src의 SVG를 불러와 그 안의 선을 그린다 -->
+        <g class="seg" data-src="../../../assets/images/about/curve.svg" transform="translate(849.27 664)"></g>
+        <g class="seg illo" data-src="../../../assets/images/about/basket.svg" transform="translate(437 1838.79)"></g>
+        <g class="seg" data-src="../../../assets/images/about/link-1.svg" transform="translate(735.73 2252.66)"></g>
+        <g class="seg illo" data-src="../../../assets/images/about/lamp.svg" transform="translate(1190 2350.37)"></g>
+        <g class="seg" data-src="../../../assets/images/about/link-2.svg" transform="translate(648.09 2735.44)"></g>
+        <g class="seg illo" data-src="../../../assets/images/about/chair.svg" transform="translate(303 2950.79)"></g>
+        <g class="seg" data-src="../../../assets/images/about/link-3.svg" transform="translate(576.7 3415.65)"></g>
+        <g class="seg illo" data-src="../../../assets/images/about/trolley.svg" transform="translate(966 3648.79)"></g>
+        <g class="lights"></g>
+        <!-- 라벨을 가리키는 짧은 선(시안의 노란 올챙이 자리) -->
+        <path class="beam" data-i="0" d="M1090.8 1839.4H1230.5"/>
+        <path class="beam" data-i="2" d="M1226.5 2915.5V3055.2"/>
+      </svg>
+    </div>
+  </section>
+
+  <!-- 5. 격자 속으로 빨려 들어가는 전환 -->
+  <div class="pin pin-g">
+    <section class="stage stage-g" data-theme="light">
+      <div class="art">
+        <div class="space"><div class="plane">
+          <i class="cell"></i>
+          <svg class="sparks" viewBox="0 0 4800 4800" aria-hidden="true">
+            <defs>
+              <linearGradient id="sg0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".6" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff"/></linearGradient>
+              <linearGradient id="sg1" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".6" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff"/></linearGradient>
+              <linearGradient id="sg2" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".6" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff"/></linearGradient>
+              <linearGradient id="sg3" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".6" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff"/></linearGradient>
+              <linearGradient id="sg4" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".6" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff"/></linearGradient>
+              <linearGradient id="sg5" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".6" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff"/></linearGradient>
+              <linearGradient id="sg6" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".6" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff"/></linearGradient>
+              <linearGradient id="sg7" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".6" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff"/></linearGradient>
+            </defs>
+            <path class="spark" stroke="url(#sg0)"/><path class="spark" stroke="url(#sg1)"/><path class="spark" stroke="url(#sg2)"/><path class="spark" stroke="url(#sg3)"/>
+            <path class="spark" stroke="url(#sg4)"/><path class="spark" stroke="url(#sg5)"/><path class="spark" stroke="url(#sg6)"/><path class="spark" stroke="url(#sg7)"/>
+            <path class="edge" pathLength="1" d="M2280 2280H2520V2520H2280Z"/>
+          </svg>
+        </div></div>
+      </div>
+
+      <!-- 빛이 모인 칸 안으로 들어가면 짧은 정사각형 상자가 있다. 면은 칠하지 않고 선과 글자만 있다.
+           끝 정사각형이 서서히 밝아지고, 도착하면 가로로 펼쳐지며 다음 화면이 된다 -->
+      <div class="room" aria-hidden="true"><div class="tunnel">
+        <b class="word3d" data-face="left">Better</b>
+        <b class="word3d" data-face="right">Everyday</b>
+        <b class="word3d" data-face="top">Life</b>
+        <b class="word3d" data-face="bottom">People</b>
+      </div>
+      <!-- 상자의 선: 원근을 직접 계산해 평면 한 장에 그린다(가볍게) -->
+      <svg class="rails">
+        <g class="grid"></g>
+        <path class="back-sq" pathLength="1"/>
+        <defs>
+          <linearGradient id="rg0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".6" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff"/></linearGradient>
+          <linearGradient id="rg1" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".6" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff"/></linearGradient>
+          <linearGradient id="rg2" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".6" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff"/></linearGradient>
+          <linearGradient id="rg3" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".6" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff"/></linearGradient>
+        </defs>
+        <path class="rail" data-x="-1" data-y="-1"/><path class="rail" data-x="1" data-y="-1"/><path class="rail" data-x="-1" data-y="1"/><path class="rail" data-x="1" data-y="1"/>
+        <path class="lit" stroke="url(#rg0)"/><path class="lit" stroke="url(#rg1)"/><path class="lit" stroke="url(#rg2)"/><path class="lit" stroke="url(#rg3)"/>
+        <rect class="reveal"/>
+      </svg>
+      </div>
+
+      <!-- 6. Sustainability — 통로 끝에 도착하면 이 화면이 된다. 글자를 좌우로 옮겨 둘 수 있다 -->
+      <div class="sus">
+        <div class="art">
+          <svg class="lines" viewBox="0 0 1920 1080" aria-hidden="true"><path d="M-1000 573.5H2920"/><path d="M1076.5 -1000V2080"/></svg>
+          <h2 class="word" aria-label="Sustainability"></h2>
+          <p class="ko ko-sus">이케아는 사람과 지구가 함께하는 더 나은 미래를 만들어갑니다.<br>소재 선택부터 생산, 고객의 일상에 닿기까지 모든 과정에 지속가능성을 담습니다.</p>
+          <p class="hint">← Drag the letters →</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- 7. 지속가능성 세 가지 — 가로로 흘러가며 가운데 항목의 사진이 열린다 -->
+  <div class="pin pin-i">
+    <section class="stage stage-i" data-theme="dark">
+      <div class="art">
+        <svg class="lines" viewBox="0 0 1920 1080" aria-hidden="true"><path d="M-1000 573.5H2920"/><path d="M668.5 -1000V2080"/><path d="M1421 -1000V2080"/></svg>
+        <div class="shots">
+          <img src="../../../assets/images/about/healthy.png" alt="원목 판재와 공구, 조립 설명서가 놓인 작업대">
+          <img src="../../../assets/images/about/climate.png" alt="안개 낀 침엽수 숲" style="object-position:50% 62%">
+          <img src="../../../assets/images/about/fair.png" alt="철사로 그린 얼굴 옆모습과 손" style="object-position:50% 40%">
+        </div>
+        <div class="titles">
+          <h3>Healthy and<br>sustainable living</h3>
+          <h3>Climate, nature<br>and circularity</h3>
+          <h3>Fair and equal</h3>
+        </div>
+        <div class="descs">
+          <p>건강하고 지속가능한 생활.<br>집에서 시작하는 작은 변화가 의미 있는 차이를 만들어냅니다.</p>
+          <p>기후, 자연 그리고 자원 순환.<br>자원을 소중히 사용하고, 제품의 수명을 더 오래 유지합니다.</p>
+          <p>공정과 평등.<br>더 나은 일상을 만드는 것은 모든 사람을 포용하는 것에서 시작됩니다.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<!-- 카트에서 격자로 이어지는 빛(화면 위에 겹쳐 그린다) -->
+<svg class="relay" aria-hidden="true">
+  <defs><linearGradient id="relayG" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".6" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff"/></linearGradient></defs>
+  <path class="relay-lit" stroke="url(#relayG)"/>
+</svg>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js"></script>
+<script src="about-ikea.js"></script>
+</body>
+</html>
