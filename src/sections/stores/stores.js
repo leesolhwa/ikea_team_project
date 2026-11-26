@@ -151,7 +151,7 @@ export class StoresSection extends BaseSection {
 
     this.camera.fov = FOV;
     this.camera.updateProjectionMatrix();
-    this.scene.background = new THREE.Color(C.ivory);
+    this.scene.background = null; // 캔버스를 투명하게: 뒤에 깐 격자선이 비쳐 보이게 (배경색은 화면 바탕이 담당)
     this.scene.add(new THREE.HemisphereLight('#ffffff', '#cfc9bd', 1.35));
     const sun = new THREE.DirectionalLight('#fffaf0', 1.9);
     sun.position.set(-0.55, 1, 0.35);
@@ -181,7 +181,19 @@ export class StoresSection extends BaseSection {
       if (this.pin > T.grow[0] && this.pin < T.turn[0] && this.ctx.stage.pick(e, this.camera, [this.globeHit])) this.ctx.scroll.scrollTo(T.dim[1] + 0.02);
     });
     this.dom.navBtns.forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); this.ctx.scroll.scrollTo(+b.dataset.go); }));
+    // 격자선은 항상 콘텐츠 뒤 배경: 3D 캔버스보다도 아래층으로 옮김 (같은 .sec-stores 변수·스타일을 쓰도록 감싸서)
+    this.under = document.createElement('div');
+    this.under.className = 'sec-stores sf-under';
+    this.under.setAttribute('aria-hidden', 'true');
+    this.under.append(this.dom.grid);
+    const cv = this.ctx.stage?.canvas;
+    if (cv?.parentNode) cv.parentNode.insertBefore(this.under, cv); else this.el.prepend(this.under);
+    this.under.hidden = true;
     this.resize(window.innerWidth, window.innerHeight);
+  }
+
+  enter() {
+    this.under.hidden = false;
   }
 
   /* ---------------- 지구본 ---------------- */
@@ -323,6 +335,7 @@ export class StoresSection extends BaseSection {
   }
 
   leave() {
+    this.under.hidden = true;
     this.el.style.cursor = '';
     clearTimeout(this.hideT);
     this.hovering = false;
@@ -426,7 +439,7 @@ export class StoresSection extends BaseSection {
     const globeFade = 1 - ease.inOut(seg(reveal, 0.55, 0.95)); // 확대 끝: 바다·대륙 면·경위선은 사라지고 한반도 선만
     this.oceanMat.opacity = this.landMat.opacity = this.krLandMat.opacity = grow * globeFade;
     this.edgeMat.opacity = this.gratMat.opacity = grow * globeFade;
-    this.krEdgeMat.opacity = grow;
+    this.krEdgeMat.opacity = grow * (1 - fam); // FAMILY 가 올라오면 한반도 선도 사라짐
     this.rimMat.opacity = wire * (1 - reveal);
     this.ovalMat.opacity = wire * (1 - grow);
     const pinsUp = ease.out(seg(pin, T.grow[0] + 0.03, T.grow[1]));
@@ -453,6 +466,7 @@ export class StoresSection extends BaseSection {
     }
     d.reveal.style.opacity = '1'; // 매장 점만 담는 층
     d.reveal.style.visibility = reveal > 0 && fam < 1 ? 'visible' : 'hidden';
+    d.reveal.style.opacity = (1 - fam).toFixed(3);
 
     // ---- 평면 지도 (시안 4·5번) ----
     d.map.classList.toggle('is-on', pin > T.first[0] + 0.01 && pin < T.family[0] + 0.01);
