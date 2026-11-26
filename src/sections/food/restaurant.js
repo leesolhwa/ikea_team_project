@@ -213,6 +213,7 @@
     .to(iv, { open: 1, duration: 1.7, ease: 'power2.inOut' }, 1.9)
     .to(iv, { text: 1, duration: 1.9, ease: 'none' }, 2.2);
   renderIntro();
+  root.classList.remove('intro-wait'); // 첫 장면(빈 화면)을 그린 뒤에 보여 준다
   /* 2. 990원 아침식사 — 스크롤에 맞춰 사선이 돌고, 접시의 잘린 면도 같은 각도로 돈다 */
   const bfPin = $('.bf-pin'), dish = $('.dish'), dishImg = $('.dish img'), cutline = $('.cutline');
   const PIVOT = { x: 980, y: 620 }, FROM = -15, TO = 59.51; // 회전축, 시작 각도, 시안 각도
