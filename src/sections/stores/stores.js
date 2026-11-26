@@ -59,7 +59,6 @@ const R = 2;      // 지구본 반지름
 const FOV = 30;
 const KOREA = { lat: 36.5, lon: 127.8 };
 const EUROPE = { lat: 44, lon: 16 };   // 시안 3번 화면에서 정면에 보이는 곳
-const FIRST = 'gangdong';              // 시안 4번 화면: 서울에 핀 하나
 const DEFAULT = 'pangyo';              // 시안 5번 화면: 처음 보이는 매장 카드
 const C = { ivory: '#fcfaf6', line: '#e6e3dd', grat: '#bdb6ab', navy: '#000c44', yellow: '#ffc800', ocean: '#f9f7f2', land: '#dddcd8', edge: '#bebbb5', krEdge: '#b2aea7' };
 /** 구간 값: keys = [[pin, 값], ...] 사이를 부드럽게 잇습니다 */
@@ -606,14 +605,15 @@ export class StoresSection extends BaseSection {
     this.camera.near = 0.01;
     if (turn <= 0) {
       this.from = null;
-      if (pin >= T.spin[0] && pin < T.turn[0]) this.spin += dt * 0.1; // 시안 3번(유럽 정면)에서 출발해 제자리 자전
+      if (pin >= T.spin[0] && pin < T.turn[0]) this.spin -= dt * 0.1; // 유럽 정면에서 출발해 동쪽(한반도 쪽)으로 자전
     } else if (this.from === null) {
       this.from = this.spin;
     }
     let yaw = this.spin;
     if (this.from !== null) {
       const target = yawFor(KOREA.lat, KOREA.lon);
-      const k = Math.round((this.from - target) / (Math.PI * 2));
+      // 자전하던 방향 그대로(동쪽) 이어서 한반도 정면까지: 지금 각도보다 작은 쪽의 한반도 각도를 고름
+      const k = Math.floor((this.from - target) / (Math.PI * 2));
       yaw = lerp(this.from, target + k * Math.PI * 2, turn);
     }
     this.globe.rotation.y = yaw;
@@ -668,11 +668,12 @@ export class StoresSection extends BaseSection {
 
     // ---- 평면 지도 (시안 4·5번) ----
     d.map.classList.toggle('is-on', pin > T.first[0] + 0.01 && pin < T.family[0] + 0.01);
-    // 4번에서는 서울(강동) 점 하나만, 5번에서 나머지가 차례로
-    d.pins.forEach((b, i) => {
-      const a = b.dataset.id === FIRST ? at(pin, T.first) : seg(pin, T.dim[0] + (i % 6) * 0.006, T.dim[0] + 0.03 + (i % 6) * 0.006);
-      b.style.setProperty('--pop', ease.out(a).toFixed(3));
-    });
+    // 한반도 지도가 펼쳐지면 매장 점이 스크롤과 상관없이 한 번에 톡 나타남 (되돌아가면 다시 사라짐)
+    const popOn = pin > T.first[0] && pin < T.family[0] + 0.01;
+    this.popK = clamp((this.popK || 0) + (popOn ? 1 : -1) * (dt / 0.45));
+    const pk = this.popK, back = 1 + 2.2 * (pk - 1) ** 3 + 1.2 * (pk - 1) ** 2; // 살짝 커졌다 제자리 (ease-out-back)
+    d.dots.style.setProperty('--pop', (pk > 0 ? back : 0).toFixed(3));
+    d.dots.classList.toggle('is-live', pk >= 1); // 다 나타난 뒤 위치 표시 물결
     // 매장 카드: 핀에 마우스를 올렸을 때만
     const mapLive = pin > T.first[0] + 0.01 && pin < T.family[0] + 0.01;
     d.card.classList.toggle('is-on', mapLive && !!this.hovering);
