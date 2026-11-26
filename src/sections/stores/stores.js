@@ -26,6 +26,7 @@ const FILES = {
 /** 매장 동네 3D 지도 모양 (시안 확정값) */
 const CITY = {
   fov: 24, dist: 6000, pitch: 60, yaw: 10,          // 카메라: 거리(m) · 내려다보는 각도 · 방향
+  shift: 0.15,                                      // 매장 점을 화면 가운데에서 오른쪽으로 (화면 폭 비율)
   fadeIn: 1300, fadeOut: 2150,                      // 이 반경(m)부터 바탕으로 서서히 사라짐
   building: '#f8f6f2', road: '#efece6', water: '#f0ede8', park: '#f8f6f2',
   hemi: 2.7, sun: 0.2,                              // 그림자 약하게 (대비 낮춤)
@@ -680,7 +681,7 @@ export class StoresSection extends BaseSection {
 
     const cam = this.camera;
     if (!show) {
-      if (cam.fov !== FOV) { cam.fov = FOV; cam.far = this.far0; cam.updateProjectionMatrix(); }
+      if (cam.fov !== FOV) { cam.fov = FOV; cam.far = this.far0; cam.clearViewOffset(); cam.updateProjectionMatrix(); }
       return;
     }
     for (const m of this.cityMats) m.opacity = inn;
@@ -690,6 +691,8 @@ export class StoresSection extends BaseSection {
     const p = THREE.MathUtils.degToRad(CITY.pitch), a = THREE.MathUtils.degToRad(CITY.yaw);
     cam.position.set(D * Math.sin(p) * Math.sin(a), D * Math.cos(p), D * Math.sin(p) * Math.cos(a));
     cam.lookAt(0, 0, 0);
+    // 매장 점을 화면 오른쪽(시안 x≈1250)으로: 왼쪽 매장 카드와 겹치지 않게 그림 전체를 옮김
+    cam.setViewOffset(this.vw, this.vh, -this.vw * CITY.shift, 0, this.vw, this.vh);
     cam.updateProjectionMatrix();
     cam.updateMatrixWorld();
     // 역 이름 · 매장 점을 3D 위치에 맞춰 붙임 (화면 가운데 근처만)
@@ -698,7 +701,8 @@ export class StoresSection extends BaseSection {
       v.copy(m).project(cam);
       const el = this.cityEls[i];
       const isPin = i === this.cityMarks.length - 1;
-      const off = !isPin && (v.x * v.x + (v.y * 1.4) ** 2 > 0.55 || v.z > 1);
+      const cx = v.x - CITY.shift * 2;
+      const off = !isPin && (cx * cx + (v.y * 1.4) ** 2 > 0.55 || v.z > 1);
       el.style.visibility = off ? 'hidden' : '';
       el.style.transform = `translate(${((v.x * 0.5 + 0.5) * this.vw).toFixed(1)}px, ${((-v.y * 0.5 + 0.5) * this.vh).toFixed(1)}px)`;
     });
