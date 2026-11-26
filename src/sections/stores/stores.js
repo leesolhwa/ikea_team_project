@@ -79,7 +79,8 @@ function yawFor(lat, lon) {
 }
 /** 여러 도형을 한 덩어리로 (그리는 횟수를 줄여 가볍게). 위치·법선만 씀 */
 function mergeAll(geos) {
-  const parts = geos.map((g) => (g.index ? g.toNonIndexed() : g));
+  // 모양이 꼬인 건물 외곽선은 좌표가 NaN 이 될 수 있어 빼고 합침
+  const parts = geos.map((g) => (g.index ? g.toNonIndexed() : g)).filter((g) => !g.attributes.position.array.some(Number.isNaN));
   let n = 0;
   for (const g of parts) n += g.attributes.position.count;
   const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3);
