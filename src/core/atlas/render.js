@@ -1,5 +1,5 @@
 const sceneLineWidth=0.7;
-function lineOpacity(dark){return dark ? 0.275 : 0.325;}
+function lineOpacity(dark){return dark ? 0.25 : 0.37;}
 function makeRenderer(canvas){
   const gl=canvas.getContext('webgl',{antialias:true,alpha:false,preserveDrawingBuffer:true});
   if(!gl)return painter(canvas);
@@ -13,7 +13,7 @@ function makeRenderer(canvas){
       z=z*rot.z+p.y*rot.w;t=tone;active=objectId>0.5 && abs(objectId-selected)<0.25 ? 1. : 0.;
       gl_Position=vec4(vec2(x*lens.x,y*lens.y)+haloOffset*z,z*1.002-0.08008,z);}`);
   attach(gl.FRAGMENT_SHADER,`precision mediump float;uniform vec3 paper;uniform vec3 edge;uniform float opacity;uniform float alpha;varying float t;varying float active;
-    void main(){gl_FragColor=vec4(t<-.5?paper:mix(paper,edge,mix(opacity,.9,active)),alpha);}`);
+    void main(){gl_FragColor=vec4(t<-.5?paper:mix(paper,edge,mix(t>2.5 ? .66 : opacity,.90,active)),alpha);}`);
   gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(program));
   gl.useProgram(program);
   const u={};for(const n of ['eye','rot','lens','paper','edge','selected','opacity','haloOffset','alpha'])u[n]=gl.getUniformLocation(program,n);
@@ -23,7 +23,7 @@ function makeRenderer(canvas){
   const ranges=new Map();
   for(const [a,b,n,id] of [...edges].sort((a,b)=>a[3]-b[3])){
     if(!ranges.has(id))ranges.set(id,{start:v.length/5,length:0});
-    ranges.get(id).length+=2;v.push(...a,n,id,...b,n,id);
+    const tone=heroIds.includes(id)?3:n; ranges.get(id).length+=2;v.push(...a,tone,id,...b,tone,id);
   }
   const total=v.length/5;
   const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(v),gl.STATIC_DRAW);
@@ -49,7 +49,7 @@ function makeRenderer(canvas){
     if(range){
       // Screen-space halo around the visible edges; the room depth buffer masks it.
       gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
-      for(const [radius,weight] of [[2.7,.045],[1.1,.10]]){
+      for(const [radius,weight] of [[1.2,.035]]){
         gl.uniform1f(u.alpha,weight);
         for(let j=0;j<8;j++){
           const angle=j*Math.PI/4;
@@ -123,7 +123,7 @@ function painter(c){
       }
       else{
         const glow=selected>0&&selected===id;
-        ctx.globalAlpha=glow ? 0.9 : lineOpacity(dark);ctx.shadowColor=outline;
+        ctx.globalAlpha=glow ? 0.90 : heroIds.includes(id) ? .66 : lineOpacity(dark);ctx.shadowColor=outline;
         ctx.shadowBlur=glow?3*w/c.clientWidth:0;ctx.stroke();ctx.shadowBlur=0;
       }
     }
