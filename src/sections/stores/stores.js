@@ -440,14 +440,14 @@ export class StoresSection extends BaseSection {
     d.reveal.style.visibility = reveal > 0 && fam < 1 ? 'visible' : 'hidden';
 
     // ---- 평면 지도 (시안 4·5번) ----
-    d.map.classList.toggle('is-on', pin > T.map[0] && pin < T.map[1]);
+    d.map.classList.toggle('is-on', pin > T.first[0] + 0.01 && pin < T.family[0] + 0.01);
     // 4번에서는 서울(강동) 네모 하나만, 5번에서 나머지가 차례로
     d.pins.forEach((b, i) => {
       const a = b.dataset.id === FIRST ? at(pin, T.first) : seg(pin, T.dim[0] + (i % 6) * 0.006, T.dim[0] + 0.03 + (i % 6) * 0.006);
       b.style.setProperty('--pop', ease.out(a).toFixed(3));
     });
     // 매장 카드: 핀에 마우스를 올렸을 때만
-    const mapLive = pin > T.dim[0] + 0.02 && pin < T.family[0] + 0.01;
+    const mapLive = pin > T.first[0] + 0.01 && pin < T.family[0] + 0.01;
     d.card.classList.toggle('is-on', mapLive && !!this.hovering);
     d.pins.forEach((b) => b.classList.toggle('is-sel', mapLive && !!this.hovering && b.dataset.id === this.selected?.id));
 
