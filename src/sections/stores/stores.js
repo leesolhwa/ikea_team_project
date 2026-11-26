@@ -6,6 +6,7 @@
 //  3. 전환        한반도를 정면으로 돌린 뒤 그대로 확대 (지도 전체를 코드로 그려서 확대해도 깨지지 않음)
 //                 대륙 면·경위선은 사라지고 한반도 해안선·도 경계선만 남아 라인 지도가 됨
 //  4. 한반도 지도  해안선·도 경계선 라인 + 매장 점 (서울 하나 → 전체). 점에 마우스 = 시안 매장 카드
+//     점 클릭 = 그 매장 동네 3D 지도 (오픈스트리트맵 건물·길·하천, 반경 2.2km). 닫기·Esc = 다시 한반도 지도
 //  5. FAMILY      시안 FAMILY 화면, 오른쪽 단어 목록이 위로 흐름 (santalarch 방식)
 import * as THREE from 'three';
 import { BaseSection } from '../../core/BaseSection.js';
@@ -17,6 +18,18 @@ const FILES = {
   world: new URL('./data/world.json', import.meta.url).href, // 세계 나라 경계 (Natural Earth 1:50m, 한국·북한 제외, 0.05도 단위 차분 부호화)
   korea: new URL('./data/korea.json', import.meta.url).href, // 한반도 해안선(남해 섬 정리) + 도 경계선 (0.001도 단위 차분 부호화)
   family: 'assets/images/stores/family-billy.webp', // 시안 FAMILY 사진
+  // 매장 동네 3D 지도 데이터 (매장마다 한 파일, 누를 때만 불러옴)
+  // © OpenStreetMap contributors (ODbL). 매장 중심 기준 m 단위 차분 부호화. 다시 받는 방법은 README 참고
+  city: (id) => new URL(`./data/city/${id}.json`, import.meta.url).href,
+};
+
+/** 매장 동네 3D 지도 모양 (시안 확정값) */
+const CITY = {
+  fov: 24, dist: 6000, pitch: 60, yaw: 10,          // 카메라: 거리(m) · 내려다보는 각도 · 방향
+  fadeIn: 1300, fadeOut: 2150,                      // 이 반경(m)부터 바탕으로 서서히 사라짐
+  building: '#f8f6f2', road: '#efece6', water: '#f0ede8', park: '#f8f6f2',
+  hemi: 2.7, sun: 0.2,                              // 그림자 약하게 (대비 낮춤)
+  road_w: { m: 22, p: 16, t: 11, r: 6, s: 3.5, x: 4 }, // 길 폭(m): 고속도로·큰길·중간길·골목·진입로·철도
 };
 
 /** 스크롤 구간 (pin 0~1) */
@@ -63,6 +76,25 @@ function latLonToVec3(lat, lon, r) {
 function yawFor(lat, lon) {
   const v = latLonToVec3(lat, lon, 1);
   return -Math.atan2(v.x, v.z);
+}
+/** 여러 도형을 한 덩어리로 (그리는 횟수를 줄여 가볍게). 위치·법선만 씀 */
+function mergeAll(geos) {
+  const parts = geos.map((g) => (g.index ? g.toNonIndexed() : g));
+  let n = 0;
+  for (const g of parts) n += g.attributes.position.count;
+  const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3);
+  let o = 0;
+  for (const g of parts) {
+    if (!g.attributes.normal) g.computeVertexNormals();
+    pos.set(g.attributes.position.array, o * 3);
+    nor.set(g.attributes.normal.array, o * 3);
+    o += g.attributes.position.count;
+    g.dispose();
+  }
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  out.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  return out;
 }
 const byId = (id) => STORES.find((s) => s.id === id);
 const shortName = (s) => s.name.replace(/^이케아 (팝업 )?/, '');
@@ -119,6 +151,10 @@ export class StoresSection extends BaseSection {
         <button type="button" data-go="${GO.family}" style="left:calc(1360 * var(--u))">IKEA Family service</button>
       </nav>
 
+      <div class="sf-city" aria-hidden="true"></div>
+      <button type="button" class="sf-close">지도로 돌아가기 <i></i></button>
+      <p class="sf-osm">지도 데이터 © OpenStreetMap contributors</p>
+
       <article class="sf-card" aria-live="polite">
         <div><h3></h3><p></p></div>
       </article>
@@ -132,16 +168,20 @@ export class StoresSection extends BaseSection {
       bar: this.$('.sf-bar'), nav: this.$('.sf-nav'), grid: this.$('.sf-grid'), navBtns: this.$$('.sf-nav button'),
       reveal: this.$('.sf-reveal'), map: this.$('.sf-map'),  pins: this.$$('.sf-pin'),
       card: this.$('.sf-card'), cardName: this.$('.sf-card h3'), cardAddr: this.$('.sf-card p'),
+      city: this.$('.sf-city'), close: this.$('.sf-close'), osm: this.$('.sf-osm'),
       family: this.$('.sf-family'), photo: this.$('.sf-photo'), special: this.$('.sf-special'), words: this.$$('.sf-list li'),
     };
 
     this.camera.fov = FOV;
     this.camera.updateProjectionMatrix();
     this.scene.background = null; // 캔버스를 투명하게: 뒤에 깐 격자선이 비쳐 보이게 (배경색은 화면 바탕이 담당)
-    this.scene.add(new THREE.HemisphereLight('#ffffff', '#cfc9bd', 1.35));
-    const sun = new THREE.DirectionalLight('#fffaf0', 1.9);
+    this.hemi = new THREE.HemisphereLight('#ffffff', '#cfc9bd', 1.35);
+    this.scene.add(this.hemi);
+    const sun = this.sun = new THREE.DirectionalLight('#fffaf0', 1.9);
     sun.position.set(-0.55, 1, 0.35);
     this.scene.add(sun);
+    this.cityK = 0; // 0 = 한반도 지도, 1 = 매장 동네 3D
+    this.far0 = this.camera.far;
     this.buildGlobe();
 
     this.spin = yawFor(EUROPE.lat, EUROPE.lon);
@@ -157,7 +197,7 @@ export class StoresSection extends BaseSection {
       b.addEventListener('focus', show);
       b.addEventListener('pointerleave', hide);
       b.addEventListener('blur', hide);
-      b.addEventListener('click', (e) => { e.stopPropagation(); show(); }); // 터치 화면에서는 눌러서 카드
+      b.addEventListener('click', (e) => { e.stopPropagation(); show(); this.openCity(store); }); // 클릭 = 그 매장 동네 3D 지도
     });
     // 카드 위로 마우스를 옮겨도 유지 (VIEW MORE 를 누를 수 있게)
     this.dom.card.addEventListener('pointerenter', () => clearTimeout(this.hideT));
@@ -166,7 +206,9 @@ export class StoresSection extends BaseSection {
     this.el.addEventListener('click', (e) => {
       if (this.pin > T.grow[0] && this.pin < T.turn[0] && this.ctx.stage.pick(e, this.camera, [this.globeHit])) this.ctx.scroll.scrollTo(T.dim[1] + 0.02);
     });
-    this.dom.navBtns.forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); this.ctx.scroll.scrollTo(+b.dataset.go); }));
+    this.dom.navBtns.forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); this.closeCity(); this.ctx.scroll.scrollTo(+b.dataset.go); }));
+    this.dom.close.addEventListener('click', (e) => { e.stopPropagation(); this.closeCity(); });
+    this.onKey = (e) => { if (e.key === 'Escape' && this.cityOn) { e.stopPropagation(); this.closeCity(); } };
     // 격자선은 항상 콘텐츠 뒤 배경: 3D 캔버스보다도 아래층으로 옮김 (같은 .sec-stores 변수·스타일을 쓰도록 감싸서)
     this.under = document.createElement('div');
     this.under.className = 'sec-stores sf-under';
@@ -180,6 +222,136 @@ export class StoresSection extends BaseSection {
 
   enter() {
     this.under.hidden = false;
+    window.addEventListener('keydown', this.onKey, true);
+  }
+
+  /* ---------------- 매장 동네 3D 지도 ---------------- */
+  async openCity(store) {
+    if (this.cityOn && this.cityStore === store) return;
+    this.cityOn = true;
+    this.cityStore = store;
+    this.ctx.scroll.lock('stores-city'); // 3D 지도를 보는 동안 스크롤로 다른 장면으로 넘어가지 않게
+    this.hovering = false;
+    if (this.cityId === store.id) return;
+    try {
+      const data = await (await fetch(FILES.city(store.id))).json();
+      if (this.cityStore !== store) return; // 불러오는 사이 다른 매장을 눌렀으면 버림
+      this.disposeCity();
+      this.city = this.buildCity(data, store);
+      this.cityId = store.id;
+      this.scene.add(this.city);
+    } catch (err) {
+      console.warn('[stores] 동네 지도를 불러오지 못했습니다:', err);
+      this.closeCity();
+    }
+  }
+
+  closeCity() {
+    if (!this.cityOn) return;
+    this.cityOn = false;
+    this.ctx.scroll.unlock('stores-city');
+  }
+
+  disposeCity() {
+    if (!this.city) return;
+    this.scene.remove(this.city);
+    this.city.traverse((o) => { o.geometry?.dispose(); o.material?.dispose(); });
+    this.city = null;
+    this.cityId = null;
+  }
+
+  buildCity(data, store) {
+    const group = new THREE.Group();
+    this.cityMats = [];
+    // 반경이 멀어질수록 투명해지는 재질 (가장자리가 바탕으로 녹아듦, 뒤 격자선이 비침)
+    const fadeMat = (mat) => {
+      mat.transparent = true;
+      mat.onBeforeCompile = (sh) => {
+        sh.uniforms.uFade = { value: new THREE.Vector3(CITY.fadeIn, CITY.fadeOut, 0) };
+        mat.userData.sh = sh;
+        sh.vertexShader = sh.vertexShader
+          .replace('#include <common>', '#include <common>\nvarying vec2 vCityXZ;')
+          .replace('#include <begin_vertex>', '#include <begin_vertex>\nvCityXZ = (modelMatrix * vec4(transformed, 1.0)).xz;');
+        sh.fragmentShader = sh.fragmentShader
+          .replace('#include <common>', '#include <common>\nvarying vec2 vCityXZ;\nuniform vec3 uFade;')
+          .replace('#include <dithering_fragment>', '#include <dithering_fragment>\ngl_FragColor.a *= 1.0 - smoothstep(uFade.x, uFade.y, length(vCityXZ));');
+      };
+      this.cityMats.push(mat);
+      return mat;
+    };
+    // 차분 부호화 풀기: "머리:x,y dx,dy ..." 를 ; 로 이어 붙인 문자열
+    const decode = (str, head) => (str ? str.split(';') : []).filter(Boolean).map((t) => {
+      const m = t.match(head);
+      let x = 0, y = 0;
+      const pts = m[2].split(' ').map((q, i) => {
+        const [dx, dy] = q.split(',').map(Number);
+        x = i ? x + dx : dx; y = i ? y + dy : dy;
+        return [x, y];
+      });
+      return [m[1], pts];
+    });
+
+    // 바닥: 공원 → 하천 → 길 순서로 얇게 (건물보다 먼저 그려서 항상 건물 아래)
+    const flat = (str, color, order) => {
+      const geos = [];
+      for (const [, pts] of decode(str, /^()(.*)$/)) {
+        if (pts.length < 3) continue;
+        const g = new THREE.ShapeGeometry(new THREE.Shape(pts.map(([x, y]) => new THREE.Vector2(x, -y))));
+        g.rotateX(-Math.PI / 2);
+        geos.push(g);
+      }
+      if (!geos.length) return;
+      const mesh = new THREE.Mesh(mergeAll(geos), fadeMat(new THREE.MeshBasicMaterial({ color, depthWrite: false, side: THREE.DoubleSide })));
+      mesh.renderOrder = order;
+      group.add(mesh);
+    };
+    flat(data.g, CITY.park, 1);
+    flat(data.w, CITY.water, 2);
+    const pos = [];
+    for (const [c, pts] of decode(data.r, /^([a-z]?)(.*)$/)) {
+      const w = (CITY.road_w[c] || 5) / 2;
+      for (let i = 1; i < pts.length; i++) {
+        const [ax, ay] = pts[i - 1], [bx, by] = pts[i];
+        const L = Math.hypot(bx - ax, by - ay) || 1, nx = (-(by - ay) / L) * w, ny = ((bx - ax) / L) * w;
+        pos.push(ax + nx, 0, ay + ny, ax - nx, 0, ay - ny, bx - nx, 0, by - ny, ax + nx, 0, ay + ny, bx - nx, 0, by - ny, bx + nx, 0, by + ny);
+      }
+    }
+    if (pos.length) {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      const road = new THREE.Mesh(g, fadeMat(new THREE.MeshBasicMaterial({ color: CITY.road, depthWrite: false, side: THREE.DoubleSide })));
+      road.renderOrder = 3;
+      group.add(road);
+    }
+
+    // 건물: 높이를 모르면 면적·종류로 짐작 (a = 아파트, h = 주택)
+    const geos = [];
+    for (const [head, pts] of decode(data.b, /^(\*?\d*[ah]?):(.*)$/)) {
+      if (pts.length < 3) continue;
+      const shape = pts.map(([x, y]) => new THREE.Vector2(x, -y));
+      let h = parseInt(head.replace('*', ''), 10) || 0;
+      if (!h) {
+        const A = Math.abs(THREE.ShapeUtils.area(shape));
+        h = head.endsWith('a') ? 55 : head.endsWith('h') ? 7 : A > 5000 ? 24 : A > 1500 ? 16 : A > 300 ? 11 : 7;
+      }
+      const g = new THREE.ExtrudeGeometry(new THREE.Shape(shape), { depth: h, bevelEnabled: false, curveSegments: 1 });
+      g.rotateX(-Math.PI / 2);
+      g.deleteAttribute('uv');
+      geos.push(g);
+    }
+    if (geos.length) {
+      const b = new THREE.Mesh(mergeAll(geos), fadeMat(new THREE.MeshLambertMaterial({ color: CITY.building })));
+      b.renderOrder = 4;
+      group.add(b);
+    }
+
+    // 화면 글자: 역 이름 + 매장 점 (지도와 같은 동그란 점)
+    const d = this.dom;
+    d.city.innerHTML = data.st.map(([n]) => `<span class="sf-st"><i></i>${n}</span>`).join('')
+      + `<span class="sf-cpin${store.type === 'popup' ? ' is-popup' : ''}"></span>`;
+    this.cityMarks = [...data.st.map(([, x, y]) => new THREE.Vector3(x, 0, y)), new THREE.Vector3(0, 0, 0)];
+    this.cityEls = [...d.city.children];
+    return group;
   }
 
   /* ---------------- 지구본 ---------------- */
@@ -310,6 +482,10 @@ export class StoresSection extends BaseSection {
 
   leave() {
     this.under.hidden = true;
+    window.removeEventListener('keydown', this.onKey, true);
+    this.closeCity();
+    this.cityK = 0;
+    this.disposeCity();
     this.el.style.cursor = '';
     clearTimeout(this.hideT);
     this.hovering = false;
@@ -469,6 +645,60 @@ export class StoresSection extends BaseSection {
       w.style.opacity = clamp((ARC.show + 0.4 - Math.abs(rel)) / 0.6).toFixed(3); // 줄에서 멀어지면 서서히 사라짐
       const b = clamp((0.6 - Math.abs(rel)) / 0.25);              // 줄에 온 단어만 굵게
       w.style.fontWeight = Math.round(200 + 400 * b * b * (3 - 2 * b));
+    });
+
+    this.updateCity(dt, fam);
+  }
+
+  /** 한반도 지도 ↔ 매장 동네 3D 지도 전환 (앞 절반: 지도가 사라짐, 뒤 절반: 3D 가 내려앉으며 나타남) */
+  updateCity(dt, fam) {
+    const d = this.dom;
+    const want = this.cityOn && this.city ? 1 : 0;
+    this.cityK = clamp(this.cityK + Math.sign(want - this.cityK) * (dt / 0.9));
+    const ck = this.cityK;
+    const out = ease.inOut(clamp(ck / 0.5)), inn = ease.inOut(clamp((ck - 0.5) / 0.5));
+    const show = ck > 0.5 && !!this.city;
+
+    if (ck > 0) {
+      this.krEdgeMat.opacity *= 1 - out;
+      d.reveal.style.opacity = ((1 - fam) * (1 - out)).toFixed(3);
+      d.w1.style.opacity = d.w2.style.opacity = (1 - fam) * (1 - out);
+      d.card.classList.remove('is-on');
+    }
+    d.reveal.style.pointerEvents = ck > 0 ? 'none' : '';
+    d.close.classList.toggle('is-on', this.cityOn);
+    d.city.style.opacity = d.osm.style.opacity = inn.toFixed(3);
+    if (this.city) this.city.visible = show;
+    if (show) { this.tilt.visible = false; this.face.visible = false; }
+
+    // 조명: 3D 동네일 때만 그림자 약하게
+    this.hemi.intensity = show ? CITY.hemi : 1.35;
+    this.hemi.groundColor.set(show ? '#e6e3dd' : '#cfc9bd');
+    this.sun.intensity = show ? CITY.sun : 1.9;
+
+    const cam = this.camera;
+    if (!show) {
+      if (cam.fov !== FOV) { cam.fov = FOV; cam.far = this.far0; cam.updateProjectionMatrix(); }
+      return;
+    }
+    for (const m of this.cityMats) m.opacity = inn;
+    if (this.far0 === undefined) this.far0 = cam.far;
+    cam.fov = CITY.fov; cam.near = 10; cam.far = 40000;
+    const D = CITY.dist * (1 + 0.25 * (1 - inn)); // 살짝 위에서 내려앉음
+    const p = THREE.MathUtils.degToRad(CITY.pitch), a = THREE.MathUtils.degToRad(CITY.yaw);
+    cam.position.set(D * Math.sin(p) * Math.sin(a), D * Math.cos(p), D * Math.sin(p) * Math.cos(a));
+    cam.lookAt(0, 0, 0);
+    cam.updateProjectionMatrix();
+    cam.updateMatrixWorld();
+    // 역 이름 · 매장 점을 3D 위치에 맞춰 붙임 (화면 가운데 근처만)
+    const v = new THREE.Vector3();
+    this.cityMarks.forEach((m, i) => {
+      v.copy(m).project(cam);
+      const el = this.cityEls[i];
+      const isPin = i === this.cityMarks.length - 1;
+      const off = !isPin && (v.x * v.x + (v.y * 1.4) ** 2 > 0.55 || v.z > 1);
+      el.style.visibility = off ? 'hidden' : '';
+      el.style.transform = `translate(${((v.x * 0.5 + 0.5) * this.vw).toFixed(1)}px, ${((-v.y * 0.5 + 0.5) * this.vh).toFixed(1)}px)`;
     });
   }
 }

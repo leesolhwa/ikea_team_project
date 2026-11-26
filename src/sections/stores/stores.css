@@ -120,6 +120,38 @@
 }
 .sec-stores .sf-list li { font-weight: 200; will-change: transform; }
 
+/* ---------- 매장 동네 3D 지도 (매장 점 클릭) ---------- */
+.sec-stores .sf-city { position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0; }
+.sec-stores .sf-city > span { position: absolute; left: 0; top: 0; }
+.sec-stores .sf-st {
+  display: flex; align-items: center; gap: 6px; margin: -7px 0 0 -6px;
+  font: 500 14px/1 var(--sans); letter-spacing: -0.02em; color: var(--navy); white-space: nowrap;
+}
+.sec-stores .sf-st i { width: 8px; height: 8px; border: 1.5px solid var(--navy); border-radius: 50%; background: var(--ivory); }
+.sec-stores .sf-cpin {
+  --pc: #000c44; --pg: rgba(0, 12, 68, .13);
+  width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: var(--pc);
+  box-shadow: 0 0 0 7px var(--pg), 0 0 0 18px rgba(0, 12, 68, .06);
+}
+.sec-stores .sf-cpin.is-popup { --pc: #ffc800; --pg: rgba(255, 200, 0, .28); box-shadow: 0 0 0 7px var(--pg), 0 0 0 18px rgba(255, 200, 0, .12); }
+.sec-stores .sf-close {
+  position: absolute; z-index: 7; right: calc(60 * var(--u)); top: calc(130 * var(--v));
+  display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0; border: 0; background: none; cursor: pointer;
+  font: 400 14px/1 var(--display); text-transform: uppercase; letter-spacing: -0.02em; color: var(--navy);
+  opacity: 0; pointer-events: none; transition: opacity .4s;
+}
+.sec-stores .sf-close.is-on { opacity: 1; pointer-events: auto; }
+.sec-stores .sf-close i { position: relative; width: 16px; height: 16px; }
+.sec-stores .sf-close i::before, .sec-stores .sf-close i::after {
+  content: ''; position: absolute; left: 50%; top: 50%; width: 18px; height: 1.5px; background: var(--navy);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.sec-stores .sf-close i::after { transform: translate(-50%, -50%) rotate(-45deg); }
+.sec-stores .sf-osm {
+  position: absolute; z-index: 7; right: 20px; bottom: 16px; margin: 0; opacity: 0; pointer-events: none;
+  font: 400 11px/1 var(--sans); color: #8a8a86;
+}
+
 @media (max-width: 760px) {
   .sec-stores .sf-card { left: 20px; right: 20px; width: auto; top: auto; bottom: 90px; }
   .sec-stores { --u: calc(100vw / 1100); --f: calc(100vw / 1100); }
