@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>IKEA Restaurant</title>
+<style>html, body { background: #000622; }</style>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;600&display=swap">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
@@ -15,6 +16,10 @@
     var m = matchMedia('(max-width: 767px)').matches;
     c.add(m ? 'm' : 'd');
     if (m || matchMedia('(prefers-reduced-motion: reduce)').matches) c.add('flat');
+    // 애니메이션 코드가 준비될 때까지 인트로를 숨겨, 완성된 화면이 먼저 보였다가 튀지 않게 한다.
+    // 코드를 불러오지 못해도 4초 뒤에는 그대로 보이게 한다.
+    else { c.add('intro-wait'); setTimeout(function () { c.remove('intro-wait'); }, 4000); }
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; // 들어올 때 항상 맨 위(선)부터
   })();
 </script>
 </head>
