@@ -67,6 +67,16 @@
 .sec-stores .sf-card.is-on { opacity: 1; transform: none; } /* 카드가 아래 매장 점을 가려도 클릭은 점으로 */
 .sec-stores .sf-card h3 { margin: 0; font: 600 max(20px, calc(28 * var(--f))) / 1.2 var(--sans); letter-spacing: -0.05em; }
 .sec-stores .sf-card p { margin: 8px 0 0; font: 400 max(14px, calc(16 * var(--f))) / 1.4 var(--sans); letter-spacing: -0.05em; }
+/* VIEW MORE: 동네 지도에서만 (이케아 공식 매장 페이지로) */
+.sec-stores .sf-more {
+  display: none; align-items: center; gap: 8px; min-height: 44px; padding: 0 22px;
+  border: 1px solid var(--navy); border-radius: 999px; color: var(--navy); text-decoration: none;
+  font: 400 max(13px, calc(15 * var(--f))) / 1 var(--display); text-transform: uppercase; letter-spacing: -0.02em;
+  transition: background .2s, color .2s;
+}
+.sec-stores .sf-card.is-city { pointer-events: auto; }
+.sec-stores .sf-card.is-city .sf-more { display: inline-flex; }
+.sec-stores .sf-more:hover, .sec-stores .sf-more:focus-visible { background: var(--navy); color: var(--ivory); outline: none; }
 
 /* 한반도 지도 층 (지구본 확대에 맞춰 커지며 나타남) */
 .sec-stores .sf-reveal { position: absolute; inset: 0; z-index: 1; visibility: hidden; opacity: 0; overflow: hidden; }
@@ -138,11 +148,6 @@
 /* ---------- 매장 동네 3D 지도 (매장 점 클릭) ---------- */
 .sec-stores .sf-city { position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0; }
 .sec-stores .sf-city > span { position: absolute; left: 0; top: 0; }
-.sec-stores .sf-st {
-  display: flex; align-items: center; gap: 6px; margin: -7px 0 0 -6px;
-  font: 500 14px/1 var(--sans); letter-spacing: -0.02em; color: var(--navy); white-space: nowrap;
-}
-.sec-stores .sf-st i { width: 8px; height: 8px; border: 1.5px solid var(--navy); border-radius: 50%; background: var(--ivory); }
 .sec-stores .sf-cpin {
   --pc: #0c3494; --pg: rgba(12, 52, 148, .16);
   width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: var(--pc);

@@ -162,6 +162,7 @@ export class StoresSection extends BaseSection {
 
       <article class="sf-card" aria-live="polite">
         <div><h3></h3><p></p></div>
+        <a class="sf-more" target="_blank" rel="noopener">View more <i aria-hidden="true">↗</i></a>
       </article>
     `;
   }
@@ -172,7 +173,7 @@ export class StoresSection extends BaseSection {
       v1: this.$('.sf-vl.v1'), v2: this.$('.sf-vl.v2'), v3: this.$('.sf-vl.v3'), mid: this.$('.sf-h.mid'),
       bar: this.$('.sf-bar'), nav: this.$('.sf-nav'), grid: this.$('.sf-grid'), navBtns: this.$$('.sf-nav button'),
       reveal: this.$('.sf-reveal'), map: this.$('.sf-map'), krsvg: this.$('.sf-krsvg'), dots: this.$('.sf-dots'),  pins: this.$$('.sf-pin'),
-      card: this.$('.sf-card'), cardName: this.$('.sf-card h3'), cardAddr: this.$('.sf-card p'),
+      card: this.$('.sf-card'), cardName: this.$('.sf-card h3'), cardAddr: this.$('.sf-card p'), more: this.$('.sf-more'),
       city: this.$('.sf-city'), close: this.$('.sf-close'), osm: this.$('.sf-osm'),
       family: this.$('.sf-family'), photo: this.$('.sf-photo'), photos: this.$$('.sf-photo img'), special: this.$('.sf-special'), words: this.$$('.sf-list li'),
     };
@@ -374,11 +375,10 @@ export class StoresSection extends BaseSection {
       this.cityBuildings = b; // 전환 때 바닥에서 솟아오름 (높이만 키움)
     }
 
-    // 화면 글자: 역 이름 + 매장 점 (지도와 같은 동그란 점)
+    // 화면 표시: 매장 점만 (지도와 같은 동그란 점). 역 이름은 매장 정보에 집중하도록 넣지 않음
     const d = this.dom;
-    d.city.innerHTML = data.st.map(([n]) => `<span class="sf-st"><i></i>${n}</span>`).join('')
-      + `<span class="sf-cpin${store.type === 'popup' ? ' is-popup' : ''}"></span>`;
-    this.cityMarks = [...data.st.map(([, x, y]) => new THREE.Vector3(x, 0, y)), new THREE.Vector3(0, 0, 0)];
+    d.city.innerHTML = `<span class="sf-cpin${store.type === 'popup' ? ' is-popup' : ''}"></span>`;
+    this.cityMarks = [new THREE.Vector3(0, 0, 0)];
     this.cityEls = [...d.city.children];
     return group;
   }
@@ -522,6 +522,8 @@ export class StoresSection extends BaseSection {
     const d = this.dom;
     d.cardName.textContent = s.name;
     d.cardAddr.textContent = s.addr;
+    d.more.href = s.url; // 동네 지도에서만 보이는 VIEW MORE → 이케아 공식 매장 페이지
+    d.more.setAttribute('aria-label', `${s.name} 이케아 매장 페이지 새 창으로 보기`);
     d.pins.forEach((b) => b.classList.toggle('is-sel', b.dataset.id === s.id));
   }
 
@@ -749,6 +751,7 @@ export class StoresSection extends BaseSection {
     this.tilt.visible = false; this.face.visible = false;
     d.w1.style.opacity = d.w2.style.opacity = (1 - fam) * (1 - sm(0, 0.25));
     d.card.classList.toggle('is-on', this.cityOn || t > 0.5); // 매장 정보 카드는 계속 보임
+    d.card.classList.toggle('is-city', this.cityOn && t > 0.5); // 동네 지도에서는 VIEW MORE 까지
     const { p0, map } = this.dive;
     const p1 = [this.vw * (0.5 + CITY.shift), this.vh / 2];
     const mv = sm(0, 0.45);
