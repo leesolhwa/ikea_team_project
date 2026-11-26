@@ -30,6 +30,7 @@ section._resize(innerWidth, innerHeight);
 scroll.setScrub(section.getScrollLength(), 0);
 stage.setActive(section);
 section._enter();
+window.storeFamily = { section, scroll }; // 콘솔 확인용: storeFamily.scroll.scrollTo(0.56)
 
 addEventListener('resize', () => {
   stage.resize();
