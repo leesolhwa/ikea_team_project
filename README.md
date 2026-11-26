@@ -1,6 +1,6 @@
 # IKEA 포트폴리오 공통 뼈대
 
-기본 화면은 Room Atlas입니다. 스크롤 한 번에 다음 방문까지 이동하고 방문이나 제목을 클릭하면 해당 상세페이지가 열립니다. 방 순서는 About → IKEA PS → 3D room → Store & Family → Restaurant → 출구입니다.
+기본 화면은 Room Atlas입니다. 스크롤할 때마다 다음 방의 대표 오브제 앞까지 걸어가고, 오브제나 방 제목을 클릭하면 상세페이지가 열립니다. 미니맵에는 현재 위치까지의 동선이 표시됩니다. 방 순서는 About → IKEA PS → 3D room → Store & Family → Restaurant → 출구입니다.
 
 ## 실행과 수정
 

@@ -9,7 +9,7 @@ header{position:absolute;z-index:3;inset:0 0 auto;display:flex;align-items:cente
 .caption{position:absolute;bottom:clamp(50px,9vh,100px);left:clamp(22px,4.1vw,72px);right:20px;pointer-events:none}
 h1{margin:0;font-size:clamp(54px,7.6vw,126px);line-height:.99;font-weight:500;letter-spacing:-.065em}h1 a{display:inline-flex;align-items:flex-start;gap:.17em;max-width:100%;text-decoration:none;pointer-events:auto}h1 a:after{content:'↗';font-size:.31em;margin-top:.25em;letter-spacing:0;color:var(--muted)}h1 a:hover:after{color:var(--text)}
 @media(max-width:600px){.caption{bottom:70px}h1{font-size:clamp(45px,12vw,64px)}}
-body.at-exit footer{display:flex}body:not(.at-exit) footer{display:none}footer{position:fixed;inset:auto 0 0;z-index:4;min-height:34vh;min-height:34svh;display:flex;align-items:center;padding:clamp(32px,6vw,96px);background:#0d1629;color:#e9edf5;border-top:1px solid #283349}
+footer{position:fixed;inset:auto 0 0;z-index:4;min-height:34vh;min-height:34svh;display:flex;align-items:center;padding:clamp(32px,6vw,96px);background:#0d1629;color:#e9edf5;border-top:1px solid #283349}
 html[data-theme=light] footer{background:#f5f6f9;color:#15223b;border-color:#cbd2dd}
 #footerlinks{width:100%;display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px 26px}
 #footerlinks a{font-size:clamp(17px,2vw,31px);letter-spacing:-.045em;text-decoration:none}
@@ -30,13 +30,36 @@ html[data-theme=light] #guides{color:#80808080}
 #guides:before{top:var(--y);left:0;width:100%;height:1px}
 #guides:after{left:var(--x);top:0;width:1px;height:100%}
 dialog #guides{position:fixed}
-#minimap{position:absolute;right:clamp(20px,4vw,68px);bottom:clamp(30px,6vh,76px);width:clamp(116px,15vw,220px);color:#f2f5fa;pointer-events:none;filter:drop-shadow(0 1px 3px var(--bg))}
-#mapwalls{fill:var(--bg);stroke:currentColor;stroke-width:.12;stroke-linejoin:round}#mapobjects{fill:var(--bg);stroke:currentColor;stroke-width:.08;opacity:.55}
-#mapeye{fill:#FAD917;stroke:var(--bg);stroke-width:.12}
-html[data-theme=light] #minimap{color:#29354a}html[data-theme=light] #mapeye{fill:#0C3494}
+
+#previous{pointer-events:none}#previous[hidden]{display:none}
+#world,#opening{touch-action:pinch-zoom}#world{cursor:grab}#world:active{cursor:grabbing}
+#minimap{position:absolute;right:clamp(16px,3.2vw,60px);bottom:clamp(20px,4vh,52px);width:clamp(162px,19vw,292px);filter:drop-shadow(0 1px 2px var(--bg));z-index:3}
+#minimap{--map-accent:#ffda00;--floor-opacity:.40;-webkit-tap-highlight-color:transparent}
+#minimap .room-floor{fill:var(--map-accent);fill-opacity:0;cursor:pointer;pointer-events:all}
+#minimap .room-floor.current{fill-opacity:var(--floor-opacity)}
+#minimap .wall{pointer-events:none}
+#minimap [role=button]{cursor:pointer;-webkit-tap-highlight-color:transparent}
+#minimap [role=button]:focus{outline:none}
+#minimap .checkpoint:focus-visible .num{text-decoration:underline}
+#minimap:has(g[aria-label="출구로 이동"]:focus-visible) .arrow{stroke-width:.25}
+body{--footer-duration:1s;--footer-ease:cubic-bezier(.42,0,.22,1)}
+footer{visibility:hidden;opacity:0;transform:translateY(100%);
+  transition:transform var(--footer-duration) var(--footer-ease),opacity var(--footer-duration) var(--footer-ease),visibility 0s var(--footer-duration)}
+body.show-footer footer{visibility:visible;opacity:1;transform:translateY(0);transition-delay:0s}
+#minimap{transition:bottom var(--footer-duration) var(--footer-ease)}
+body.show-footer #minimap{bottom:37svh}
+@media(prefers-reduced-motion:reduce){body{--footer-duration:0s}}
+.wall{fill:none;stroke:#dce0e7;stroke-width:.145;stroke-linecap:square}.route,.arrow{fill:none;stroke:#fad917;stroke-width:.14;stroke-linejoin:round;stroke-linecap:round;pointer-events:none}
+.pin{fill:#ab9014}.active .pin{fill:#ffda00}.halo{visibility:hidden;fill:url(#checkpoint-glow);pointer-events:none}.active .halo{visibility:visible}#checkpoint-glow stop{stop-color:#ffda00}.checkpoint{cursor:pointer}.num{font:400 .89px "Segoe UI",Arial,sans-serif;fill:#e0e4eb;text-anchor:middle;dominant-baseline:middle;pointer-events:none}
+.start-symbol{fill:var(--bg);stroke:#fad917;stroke-width:.14}
+html[data-theme=light] #minimap .wall{stroke:#666d78}html[data-theme=light] #minimap .num{fill:#283957}
+html[data-theme=light] #minimap :is(.route,.arrow,.start-symbol){stroke:#0c3494}
+html[data-theme=light] #minimap{--map-accent:#0c3494;--floor-opacity:.20}
+html[data-theme=light] #minimap .checkpoint:not(.active) .pin{fill:#6584bf}#minimap .active .pin{fill:var(--map-accent)}
+html[data-theme=light] #checkpoint-glow stop{stop-color:#0c3494}
 body:has(dialog[open]) #minimap{visibility:hidden}
 .scene[data-object-hover] #opening:hover{stroke:transparent}
-@media(max-width:600px){#minimap{width:100px;bottom:15px;right:15px}.caption{bottom:125px}}
+@media(max-width:600px){#minimap{width:clamp(144px,38vw,190px);bottom:15px;right:14px}.caption{bottom:clamp(169px,43vw,206px)}}
 dialog{--navy:#071546;--grid:rgba(22,37,71,.085);position:fixed;inset:0;width:100%;height:100%;max-width:none;max-height:none;margin:0;padding:0;border:0;background:var(--paper);color:var(--navy);color-scheme:light;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
 dialog::backdrop{background:transparent}dialog::-webkit-scrollbar{display:none}
 dialog[data-preview]:not([open]){display:block;z-index:6;pointer-events:none;overflow:hidden;transform:translateY(100%)}
@@ -56,3 +79,4 @@ dialog[data-preview]:not([open]){display:block;z-index:6;pointer-events:none;ove
 .spread p{align-self:center;margin:0;padding:0 18px;max-width:25ch;font-size:clamp(11px,1vw,18px);line-height:1.5;word-break:keep-all}
 @media(max-width:620px){.folio{--navh:44px}.folionav .back{width:11%}.folionav button{padding:0 4px}.opener p{padding-right:8px;font-size:17px}.spread h3{font-size:clamp(19px,4.5vw,30px)}.spread p{padding:0 9px}}
 .folio h2:focus{outline:none}.folio[data-about] h2{font-size:clamp(68px,15.2vw,240px)}.folio[data-about] h2 span{transform:scaleX(1.14);transform-origin:left center}.folionav .back{width:38px;margin-right:max(0px,calc(24% - 38px))}@media(max-width:620px){.folionav .back{margin-right:0}}
+#world,#world:active{cursor:default}.scene[data-object-hover] #world{cursor:pointer}
