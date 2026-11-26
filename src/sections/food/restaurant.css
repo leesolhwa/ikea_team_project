@@ -47,6 +47,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .mini { width: 108px; height: 78px; font: 300 7px/1 Alexandria, sans-serif; }
 .d .mini { left: 905px; top: 859px; }
 .mini span { opacity: .55; }
+.intro-wait .intro .lines, .intro-wait .intro .display, .intro-wait .intro .lead, .intro-wait .intro .mini { visibility: hidden; }
 .mini span { position: absolute; transform: translate(-50%, -50%) rotate(var(--r)); }
 .mini .arrow { position: absolute; left: 42.5px; top: 0; animation: bob 1.6s ease-in-out infinite; }
 .lines .light { stroke-width: 1.4; transition: none; }
