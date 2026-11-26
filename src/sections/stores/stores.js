@@ -18,7 +18,7 @@ const FILES = {
   world: new URL('./data/world.json', import.meta.url).href, // 세계 나라 경계 (Natural Earth 1:50m, 한국·북한 제외, 0.05도 단위 차분 부호화)
   korea: new URL('./data/korea.json', import.meta.url).href, // 한반도 해안선(남해 섬 정리) + 도 경계선 (0.001도 단위 차분 부호화)
   // FAMILY 혜택마다 사진 (FAMILY 목록 순서와 같게: PRICE, HEJ POINT, FOOD, PRESENT, 2 WEEK SERVICE, EVENT, STYLING)
-  family: ['price', 'hej', 'food', 'present', 'service', 'event', 'styling'].map((f) => `assets/images/stores/family/${f}.webp`),
+  family: ['price', 'hej', 'food', 'present', 'service', 'event', 'styling'].map((f) => new URL(`../../../assets/images/stores/family/${f}.webp`, import.meta.url).href), // 어느 페이지에서 열어도 맞는 경로
   // 매장 동네 3D 지도 데이터 (매장마다 한 파일, 누를 때만 불러옴)
   // © OpenStreetMap contributors (ODbL). 매장 중심 기준 m 단위 차분 부호화. 다시 받는 방법은 README 참고
   city: (id) => new URL(`./data/city/${id}.json`, import.meta.url).href,
@@ -409,6 +409,24 @@ export class StoresSection extends BaseSection {
     oval.scale.x = 0.5;
     rim.renderOrder = oval.renderOrder = 3;
     this.face.add(rim, oval);
+    // 둥근 위도선 (30도 간격, 살짝 내려다본 모양, 앞쪽 절반만) — 다음 장면 지구본의 경위선과 이어지게
+    const lat = [], tl = THREE.MathUtils.degToRad(20);
+    for (let d = -60; d <= 60; d += 30) {
+      const p = THREE.MathUtils.degToRad(d);
+      let prev = null;
+      for (let i = 0; i <= 180; i++) {
+        const t = (i / 180) * Math.PI * 2;
+        const x = R * Math.cos(p) * Math.cos(t), y = R * Math.sin(p), z = R * Math.cos(p) * Math.sin(t);
+        const cur = new THREE.Vector3(x, y * Math.cos(tl) - z * Math.sin(tl), y * Math.sin(tl) + z * Math.cos(tl));
+        if (prev && prev.z >= 0 && cur.z >= 0) lat.push(prev.x, prev.y, 0, cur.x, cur.y, 0);
+        prev = cur;
+      }
+    }
+    const latGeo = new THREE.BufferGeometry();
+    latGeo.setAttribute('position', new THREE.Float32BufferAttribute(lat, 3));
+    const latLines = new THREE.LineSegments(latGeo, this.ovalMat); // 세로 타원과 같이 나타나고 같이 사라짐
+    latLines.renderOrder = 3;
+    this.face.add(latLines);
 
     // 대륙: noart 레퍼런스처럼 바다 + 회색 대륙 + 나라 경계선. 이미지 대신 지도 좌표로 직접 그림
     this.oceanMat = new THREE.MeshBasicMaterial({ color: C.ocean, transparent: true, opacity: 0 });
