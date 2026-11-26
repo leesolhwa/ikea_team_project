@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Store &amp; Family — IKEA</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alexandria:wght@100..900&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  /* Store & Family 상세페이지 (메인 Room Atlas 의 store-family 방에서 열림) */
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #fcfaf6; }
+  .sf-page { position: fixed; inset: 0; color: #111; font-family: 'Pretendard', 'Noto Sans KR', system-ui, sans-serif; }
+  .sf-page *, .sf-page *::before, .sf-page *::after { box-sizing: border-box; }
+  .sf-page h1, .sf-page h2, .sf-page h3, .sf-page p, .sf-page ul { margin: 0; padding: 0; }
+  .sf-page ul { list-style: none; }
+  .sf-page img { display: block; max-width: 100%; }
+  .sf-page button { font: inherit; }
+  .sf-page-stage { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .sf-page-layer { position: absolute; inset: 0; }
+  .sf-page .sec { position: absolute; inset: 0; overflow: hidden; visibility: hidden; }
+  .sf-page .sec.is-active { visibility: visible; }
+  /* 나가기: 메인 상세페이지 탭바의 ↤ 와 같은 모양, 위 메뉴 줄 왼쪽 */
+  .sf-page-exit {
+    position: absolute; left: clamp(12px, 2vw, 40px); top: calc(48 * 100vh / 1080); z-index: 10;
+    display: inline-flex; align-items: center; min-width: 44px; height: 44px; padding: 0 8px;
+    color: #000c44; font: 500 21px/1 Arial, sans-serif; text-decoration: none;
+  }
+  .sf-page-exit:hover, .sf-page-exit:focus-visible { opacity: .6; outline: none; }
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+</head>
+<body>
+<main class="sf-page">
+  <canvas class="sf-page-stage" aria-hidden="true"></canvas>
+  <div class="sf-page-layer"></div>
+  <a class="sf-page-exit" href="../../../index.html?room=store-family" aria-label="Store &amp; Family 방으로 나가기" title="방으로 나가기">↤</a>
+</main>
+<script type="module" src="./store-family.js"></script>
+</body>
+</html>
