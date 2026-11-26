@@ -610,24 +610,21 @@ export class StoresSection extends BaseSection {
     this.tilt.visible = globeOn;
     this.face.visible = reveal < 1;
     this.camera.near = 0.01;
-    // 지구본 회전: 보이는 동안 늘 동쪽(한반도 쪽)으로 천천히 돌고, 스크롤로 한반도 정면까지 이어서 돌아감.
-    // 스크롤은 '목표 각도'만 정하고 실제 각도는 부드럽게 따라가서, 스크롤을 멈춰도 뚝 멈추지 않음
+    // 지구본 회전: 보이는 동안 늘 동쪽(한반도 쪽)으로 천천히 돌고, 한반도 구간에 들어오면 정면까지 이어서 돌아감.
+    // 돌아가는 정도 = max(시간, 스크롤): 스크롤을 멈춰도 2.5초에 걸쳐 저절로 끝까지 돌고, 빨리 스크롤하면 그만큼 빨리 돎 → 멈칫·뚝뚝 없음
+    this.turnT = clamp((this.turnT || 0) + (pin > T.turn[0] ? 1 : -1) * (dt / 2.5));
+    const turnR = Math.max(turn, ease.inOut(this.turnT));
     const korea = yawFor(KOREA.lat, KOREA.lon);
-    if (turn <= 0) this.from = null;
+    if (turnR <= 0) this.from = null;
     else if (this.from === null) this.from = this.spin; // 한반도로 돌기 시작한 각도
-    const goal = this.from === null ? null : korea + Math.PI * 2 * Math.floor((this.from - korea) / (Math.PI * 2)); // 지금보다 동쪽에 있는 한반도 각도
+    const goal = this.from === null ? null : korea + Math.PI * 2 * Math.floor((this.from - korea) / (Math.PI * 2)); // 지금보다 동쪽의 한반도 각도
     if (pin > T.grow[0] && reveal <= 0) {
-      // 저절로 도는 속도: 한반도로 가는 동안은 점점 줄어 정면에서 멈춤
-      this.spin -= dt * 0.1 * (1 - turn);
+      this.spin -= dt * 0.1 * (1 - turnR); // 저절로 도는 속도: 한반도에 가까워질수록 줄어 정면에서 멈춤
       if (goal !== null) this.spin = Math.max(this.spin, goal);
     }
-    const want = goal === null ? this.spin : lerp(this.spin, goal, turn);
-    if (this.yaw === undefined) this.yaw = want;
-    this.yaw += (want - this.yaw) * (1 - Math.exp(-dt * 5));
-    if (turn >= 1 || reveal > 0) this.yaw = want; // 한반도 확대 중에는 정확히 정면
-    const yaw = this.yaw;
+    const yaw = goal === null ? this.spin : lerp(this.spin, goal, turnR);
     this.globe.rotation.y = yaw;
-    this.tilt.rotation.x = lerp(THREE.MathUtils.degToRad(EUROPE.lat), THREE.MathUtils.degToRad(KOREA.lat), turn);
+    this.tilt.rotation.x = lerp(THREE.MathUtils.degToRad(EUROPE.lat), THREE.MathUtils.degToRad(KOREA.lat), turnR);
     const s = lerp(0.27, 1, grow);
     this.tilt.scale.setScalar(s);
 
