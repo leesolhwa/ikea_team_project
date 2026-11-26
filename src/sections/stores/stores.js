@@ -10,7 +10,7 @@
 import * as THREE from 'three';
 import { BaseSection } from '../../core/BaseSection.js';
 import { ease, seg, lerp, clamp } from '../../core/tween.js';
-import { STORES, COUNTRIES, FAMILY } from './data.js';
+import { STORES, FAMILY } from './data.js';
 
 // ▼ 교체 포인트
 const FILES = {
@@ -64,20 +64,6 @@ function yawFor(lat, lon) {
   const v = latLonToVec3(lat, lon, 1);
   return -Math.atan2(v.x, v.z);
 }
-/** 지구본 매장 표시 텍스처 (R2: 가운데 점 + 연한 원). 흰색이라 재질 색(남색)과 곱해짐 */
-const DOT = (() => {
-  const c = document.createElement('canvas');
-  c.width = c.height = 64;
-  const g = c.getContext('2d');
-  g.fillStyle = 'rgba(255,255,255,0.22)';
-  g.beginPath(); g.arc(32, 32, 31, 0, Math.PI * 2); g.fill(); // 연한 원 (재질 투명도 60% × 22% ≈ 13%)
-  g.fillStyle = '#fff';
-  g.beginPath(); g.arc(32, 32, 16, 0, Math.PI * 2); g.fill(); // 가운데 점
-  const t = new THREE.CanvasTexture(c);
-  t.generateMipmaps = false;
-  t.minFilter = THREE.LinearFilter;
-  return t;
-})();
 const byId = (id) => STORES.find((s) => s.id === id);
 const shortName = (s) => s.name.replace(/^이케아 (팝업 )?/, '');
 
@@ -240,18 +226,6 @@ export class StoresSection extends BaseSection {
     this.gratMat = new THREE.LineBasicMaterial({ color: C.grat, transparent: true, opacity: 0 });
     this.globe.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(grat), this.gratMat));
 
-    // 매장 표시: 매장이 있는 나라마다 남색 점 하나 (한국은 조금 크게). 점은 화면 px 크기라 확대해도 그대로
-    const marks = (list, size) => {
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.Float32BufferAttribute(list.flatMap(([lat, lon]) => latLonToVec3(lat, lon, R * 1.003).toArray()), 3));
-      const m = new THREE.PointsMaterial({ size, sizeAttenuation: false, color: C.navy, map: DOT, transparent: true, opacity: 0, depthWrite: false });
-      const o = new THREE.Points(geo, m);
-      o.renderOrder = 3;
-      this.globe.add(o);
-      return m;
-    };
-    this.markMat = marks(COUNTRIES, 10);     // 점 5px + 연한 원
-    this.markKrMat = marks([[KOREA.lat, KOREA.lon]], 13);
   }
 
   /** 세계·한반도 지도를 지도 좌표로 그림 (면 = 경위도 평면에서 삼각형으로 나눈 뒤 잘게 쪼개 구에 붙임, 선 = 0.5도 간격으로 구 위를 따라감) */
@@ -442,10 +416,6 @@ export class StoresSection extends BaseSection {
     this.krEdgeMat.opacity = grow * (1 - fam); // FAMILY 가 올라오면 한반도 선도 사라짐
     this.rimMat.opacity = wire * (1 - reveal);
     this.ovalMat.opacity = wire * (1 - grow);
-    const pinsUp = ease.out(seg(pin, T.grow[0] + 0.03, T.grow[1]));
-    const MARK = 0.6; // 남색 60%: 회색 지구본 위에서 뜨지 않게
-    this.markMat.opacity = MARK * pinsUp * (1 - ease.inOut(seg(reveal, 0.2, 0.5)));
-    this.markKrMat.opacity = MARK * pinsUp * (1 - ease.inOut(seg(reveal, 0.6, 0.9)));
 
     this.camera.position.set(0, 0, camD);
     this.camera.lookAt(0, 0, 0);

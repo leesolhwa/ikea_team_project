@@ -110,10 +110,12 @@
   letter-spacing: -0.05em; text-transform: uppercase; white-space: nowrap;
 }
 .sec-stores .sf-special {
-  position: absolute; left: calc(464 * var(--u)); top: calc(495 * var(--v)); font-weight: 600; z-index: 2; will-change: transform;
+  /* 사진 바로 위 (글자 아래끝 = 가운데 선 574) */
+  position: absolute; left: calc(464 * var(--u)); top: calc(574 * var(--v) - 156 * var(--f)); font-weight: 600; z-index: 2; will-change: transform;
 }
 .sec-stores .sf-list {
-  position: absolute; left: calc(1002 * var(--u)); top: calc(497 * var(--v)); margin: 0; padding: 0; list-style: none;
+  /* 굵게 되는 줄이 SPECIAL 과 같은 높이 */
+  position: absolute; left: calc(1002 * var(--u)); top: calc(576 * var(--v) - 156 * var(--f)); margin: 0; padding: 0; list-style: none;
   display: grid; gap: calc(10 * var(--f));
 }
 .sec-stores .sf-list li { font-weight: 200; will-change: transform; }
