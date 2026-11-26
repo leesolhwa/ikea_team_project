@@ -196,7 +196,7 @@ export class StoresSection extends BaseSection {
     // 평면 지도 핀: 마우스 = 카드, 클릭 = 매장 정보 패널로
     this.dom.pins.forEach((b) => {
       const store = byId(b.dataset.id);
-      const show = () => { clearTimeout(this.hideT); this.pickStore(store); this.hovering = true; };
+      const show = () => { if (this.cityOn) return; clearTimeout(this.hideT); this.pickStore(store); this.hovering = true; }; // 동네 지도 중엔 숨은 점에 반응 안 함
       const hide = () => this.hideCard();
       b.addEventListener('pointerenter', () => { show(); this.loadCity(store.id); }); // 올려 둘 때 동네 지도 미리 불러옴
       b.addEventListener('focus', show);
@@ -696,7 +696,7 @@ export class StoresSection extends BaseSection {
     const sm = (a, b) => { const x = clamp((t - a) / (b - a)); return x * x * (3 - 2 * x); };
     const on = t > 0 && !!this.city && !!this.dive;
 
-    d.reveal.style.pointerEvents = t > 0 ? 'none' : '';
+    d.reveal.style.pointerEvents = d.map.style.pointerEvents = t > 0 ? 'none' : '';
     d.close.classList.toggle('is-on', this.cityOn);
     d.krsvg.style.opacity = on ? '1' : '0';
     d.pins.forEach((b) => { b.style.visibility = on && b.dataset.id === this.cityStore?.id ? 'hidden' : ''; });
