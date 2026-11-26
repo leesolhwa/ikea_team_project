@@ -472,15 +472,19 @@ export class StoresSection extends BaseSection {
     const famIn = ease.out(seg(pin, T.family[0] + 0.02, T.family[1]));
     d.photo.style.clipPath = `inset(0 ${(1 - famIn) * 100}% 0 0)`;
     d.special.style.transform = `translateX(${px((1 - famIn) * -420)})`;
-    // santalarch 방식: 오른쪽 목록이 위로 올라가고, SPECIAL 줄에 닿은 단어가 굵어짐.
-    // 아직 줄 아래에 있는 단어는 시안처럼 한 줄에 50px 씩 계단, 줄을 지난 단어는 왼쪽으로 정렬
+    // santalarch 방식: 오른쪽 목록이 반원(타원 반쪽)을 따라 위로 올라감.
+    // SPECIAL 줄에 온 단어만 왼쪽 끝(시안 자리)에 닿아 굵어지고, 줄 아래·위 단어는 같은 반원을 따라 오른쪽으로 비켜남
+    const ARC = { w: 700, rows: 3 }; // 반원 폭(시안 px) · 줄에서 몇 줄 떨어지면 반원 끝인지
     const k = ease.inOut(at(pin, T.list)) * (FAMILY.length - 1);
     d.words.forEach((w, i) => {
       const rel = i - k;
+      const u = Math.min(1, Math.abs(rel) / ARC.rows);
       const intro = ease.out(seg(pin, T.family[0] + 0.02 + i * 0.006, T.family[1] + i * 0.006));
-      const x = Math.max(0, rel) * 50 + (1 - intro) * (240 + i * i * 46);
+      const x = ARC.w * (1 - Math.sqrt(1 - u * u)) + (1 - intro) * (240 + i * i * 46);
       w.style.transform = `translate(${px(x)}, calc(${-k * 166} * var(--f)))`;
-      w.style.fontWeight = Math.round(200 + 200 * clamp(1 - Math.abs(rel)));
+      w.style.opacity = clamp((ARC.rows + 0.4 - Math.abs(rel)) / 0.6).toFixed(3); // 반원 끝을 지나면 사라짐
+      const b = clamp((0.6 - Math.abs(rel)) / 0.25);              // 줄에 온 단어만 굵게
+      w.style.fontWeight = Math.round(200 + 400 * b * b * (3 - 2 * b));
     });
   }
 }
