@@ -86,4 +86,4 @@ dialog[data-preview]:not([open]){display:block;z-index:6;pointer-events:none;ove
 .spread p{align-self:center;margin:0;padding:0 18px;max-width:25ch;font-size:clamp(11px,1vw,18px);line-height:1.5;word-break:keep-all}
 @media(max-width:620px){.folio{--navh:44px}.folionav .back{width:11%}.folionav button{padding:0 4px}.opener p{padding-right:8px;font-size:17px}.spread h3{font-size:clamp(19px,4.5vw,30px)}.spread p{padding:0 9px}}
 .folio h2:focus{outline:none}.folio[data-about] h2{font-size:clamp(68px,15.2vw,240px)}.folio[data-about] h2 span{transform:scaleX(1.14);transform-origin:left center}.folionav .back{width:38px;margin-right:max(0px,calc(24% - 38px))}@media(max-width:620px){.folionav .back{margin-right:0}}
-#world,#world:active{cursor:default}.scene[data-object-hover] #world{cursor:pointer}
+#world,#world:active{cursor:default}.scene[data-room-ready] #world{cursor:pointer}

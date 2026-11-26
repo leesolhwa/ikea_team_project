@@ -2,7 +2,7 @@ const $=s=>document.getElementById(s);
 const rooms=[
   {id:'about',name:'About',ko:'거실',text:'왼쪽 거실에서 탐색을 시작합니다. 소파와 낮은 테이블 너머로 안쪽 전시 공간이 이어집니다.',items:['소파와 플로어 램프가 놓인 휴식 공간','창가를 따라 이어지는 작은 좌석들']},
   {id:'ikea-ps',name:'IKEA PS',ko:'컬렉션 전시실',page:'./src/sections/collection/collection.html',text:'거실 뒤편의 전시실입니다. 선반 앞에는 휜 합판으로 좌석과 등받이를 연결한 의자가 놓여 있습니다.',items:['벽면을 따라 놓인 오픈 선반','낮은 전시대 위의 의자와 조명']},
-  {id:'3d-room',name:'3D room',ko:'침실',text:'중앙 통로에서 안쪽으로 들어온 침실입니다. 반쯤 열린 미닫이문 사이로 침대와 협탁이 보입니다.',items:['낮은 침대와 패브릭 침구','침대 옆 협탁과 조명']},
+  {id:'3d-room',name:'3D room',ko:'침실',page:'./src/sections/rooms/room3d.html',text:'중앙 통로에서 안쪽으로 들어온 침실입니다. 반쯤 열린 미닫이문 사이로 침대와 협탁이 보입니다.',items:['낮은 침대와 패브릭 침구','침대 옆 협탁과 조명']},
   {id:'store-family',name:'Store & Family',ko:'패밀리 라운지',text:'도면 오른쪽 앞에 자리한 라운지입니다. 좌석 옆 랙에는 이케아 매장을 그린 매거진이 꽂혀 있고, 옆 출입구를 지나면 다이닝으로 이어지는 복도에 닿습니다.',items:['매장 안내와 IKEA Family를 담은 매거진','라운지 좌석 옆의 독서등']},
   {id:'restaurant',name:'Restaurant',ko:'키친 & 다이닝',page:'./src/sections/food/restaurant.html',text:'오른쪽 뒤편의 식탁과 주방입니다. 의자 사이와 조리대 앞을 오가며 식탁 위 펜던트와 벽면 수납장을 다른 각도로 볼 수 있습니다.',items:['여섯 자리가 있는 긴 식탁','벽면 조리대와 상부 수납장']}
 ];
@@ -93,7 +93,8 @@ dialog.addEventListener('scroll',()=>{
   [...$('chapters').children].forEach((b,i)=>b.setAttribute('aria-current',String(i===active)));
 },{passive:true});
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');
-let index=new URLSearchParams(location.search).get('room')==='store-family'?3:0,detailIndex=-1,dark=true,frame=0,busy=false;
+const initialRoom=new URLSearchParams(location.search).get('room');
+let index=Math.max(0,rooms.findIndex(room=>room.id===initialRoom)),detailIndex=-1,dark=true,frame=0,busy=false;
 const cameras=[
  {name:'About',x:4.25,z:15,yaw:.62},
  {name:'IKEA PS',x:8.9,z:.40,yaw:-2.45},
@@ -208,6 +209,7 @@ function goTo(next,direction=0){
   const leavingFooter=index===rooms.length;
   if(busy||dialog.open||next<0||next>=cameras.length||next===index)return;
   if(direction&&now<holdUntil&&!enteringFooter&&!leavingFooter)return;
+  press=null;
   tourView(now);
   const fromMap=mapPosition(now);
   index=next;clearPointer();mapTween=null;
@@ -276,6 +278,10 @@ function draw(){
   document.body.classList.toggle('show-footer',atExit||Boolean(finishingWalk));
   tourFooter.inert=!atExit;
   updateTourMap(performance.now());
+  const ready=canEnterRoom();
+  scene.toggleAttribute('data-room-ready',ready);
+  world.setAttribute('aria-disabled',String(!ready));
+  world.setAttribute('aria-label',ready?rooms[index].name+' 상세페이지 열기':'공간 탐색');
   if(!caption.hidden){$('enter').textContent=rooms[index].name;$('enter').href=rooms[index].page||'#'+rooms[index].id;$('enter').setAttribute('aria-label',rooms[index].name+' 상세페이지')}
 }
 let touchY=null;
@@ -351,8 +357,9 @@ addEventListener('keydown',e=>{
 const entryLinks='#world, #enter, #footerlinks a';
 let press=null;
 document.addEventListener('pointerdown',e=>{
-  if(!e.isPrimary)return;
+  if(!e.isPrimary||e.button!==0){press=null;return}
   const link=e.target.closest(entryLinks);
+  if((link===world||link===$('enter'))&&!canEnterRoom()){press=null;return}
   press=link?{id:e.pointerId,link,x:e.clientX,y:e.clientY,dragged:false}:null;
 },true);
 function trackPress(e){
@@ -439,8 +446,14 @@ for(const [i,r] of rooms.entries()){
   a.onclick=e=>enter(e,i);$('footerlinks').append(a);
 }
 function leave(){
+  index=detailIndex;
   if(history.state?.roomTour)history.back();
-  else{history.replaceState(null,'',location.pathname+location.search);syncDetail()}
+  else{
+    const url=new URL(location.href);
+    url.hash='';
+    url.searchParams.set('room',rooms[index].id);
+    history.replaceState(null,'',url);syncDetail();
+  }
 }
 $('back').onclick=leave;dialog.oncancel=e=>{e.preventDefault();leave()};
 addEventListener('popstate',syncDetail);
@@ -508,12 +521,13 @@ function updateTourMap(now){
   });
 }
 
-function hitsObject(x,y){
-  if(approach||index>=rooms.length||busy||dialog.open)return false;
-  const r=world.getBoundingClientRect();
-  return pick(tourView(performance.now()),x-r.left,y-r.top,r.width,r.height)===heroIds[index];
+function canEnterRoom(){
+  return index<rooms.length&&!approach&&!busy&&!dialog.open;
 }
 world.addEventListener('click',e=>{
-  if(e.detail&&hitsObject(e.clientX,e.clientY))enter(e,index);
+  if(e.detail&&canEnterRoom())enter(e,index);
 });
-new ResizeObserver(schedule).observe(world);theme();syncDetail();if(index===0&&!dialog.open&&!reduced.matches)walkIn();
+world.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.repeat&&canEnterRoom())enter(e,index);
+});
+new ResizeObserver(schedule).observe(world);theme();syncDetail();if(index===0&&initialRoom!=='about'&&!dialog.open&&!reduced.matches)walkIn();
