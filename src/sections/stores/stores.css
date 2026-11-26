@@ -98,8 +98,8 @@
   content: ''; position: absolute; inset: 0; border-radius: 50%; border: 1.5px solid var(--pc);
   opacity: 0; pointer-events: none;
 }
-.sec-stores .sf-pin:hover::after, .sec-stores .sf-pin:focus-visible::after, .sec-stores .sf-pin.is-sel::after { animation: sf-ping 1.6s ease-out infinite; }
-@keyframes sf-ping { 0% { transform: scale(1); opacity: .8; } 100% { transform: scale(4.2); opacity: 0; } }
+.sec-stores .sf-pin:hover::after, .sec-stores .sf-pin:focus-visible::after, .sec-stores .sf-pin.is-sel::after { animation: sf-ping 1.8s ease-out infinite; }
+@keyframes sf-ping { 0% { inset: 0; opacity: .85; } 100% { inset: -32px; opacity: 0; } } /* 지름 10px → 74px, 선 굵기는 그대로 */
 .sec-stores .sf-pin i { display: none; }
 .sec-stores .sf-pin:hover, .sec-stores .sf-pin:focus-visible, .sec-stores .sf-pin.is-sel { --a: 1; outline: none; box-shadow: 0 0 0 7px var(--pg); }
 
