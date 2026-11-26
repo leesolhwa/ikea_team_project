@@ -26,6 +26,7 @@ const FILES = {
 /** 매장 동네 3D 지도 모양 (시안 확정값) */
 const CITY = {
   fov: 24, dist: 6000, pitch: 60, yaw: 10,          // 카메라: 거리(m) · 내려다보는 각도 · 방향
+  sway: [5, 2.5],                                   // 커서를 따라 살짝 도는 정도(도): 좌우 · 위아래
   shift: 0.15,                                      // 매장 점을 화면 가운데에서 오른쪽으로 (화면 폭 비율)
   fadeIn: 1300, fadeOut: 2150,                      // 이 반경(m)부터 바탕으로 서서히 사라짐
   building: '#f8f6f2', road: '#efece6', water: '#f0ede8', park: '#f8f6f2',
@@ -209,6 +210,12 @@ export class StoresSection extends BaseSection {
       if (this.pin > T.grow[0] && this.pin < T.turn[0] && this.ctx.stage.pick(e, this.camera, [this.globeHit])) this.ctx.scroll.scrollTo(T.dim[1] + 0.02);
     });
     this.dom.navBtns.forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); this.closeCity(); this.ctx.scroll.scrollTo(+b.dataset.go); }));
+    // 동네 지도: 커서 위치를 기억해 두고 매 프레임 카메라가 천천히 따라감
+    this.mouse = { x: 0, y: 0, sx: 0, sy: 0 };
+    this.el.addEventListener('pointermove', (e) => {
+      this.mouse.x = (e.clientX / this.vw) * 2 - 1;
+      this.mouse.y = (e.clientY / this.vh) * 2 - 1;
+    });
     this.dom.close.addEventListener('click', (e) => { e.stopPropagation(); this.closeCity(); });
     this.onKey = (e) => { if (e.key === 'Escape' && this.cityOn) { e.preventDefault(); e.stopPropagation(); this.closeCity(); } }; // Esc: 창을 닫지 않고 지도로만 돌아감
     // 격자선은 항상 콘텐츠 뒤 배경: 3D 캔버스보다도 아래층으로 옮김 (같은 .sec-stores 변수·스타일을 쓰도록 감싸서)
@@ -688,7 +695,9 @@ export class StoresSection extends BaseSection {
     if (this.far0 === undefined) this.far0 = cam.far;
     cam.fov = CITY.fov; cam.near = 10; cam.far = 40000;
     const D = CITY.dist * (1 + 0.25 * (1 - inn)); // 살짝 위에서 내려앉음
-    const p = THREE.MathUtils.degToRad(CITY.pitch), a = THREE.MathUtils.degToRad(CITY.yaw);
+    const m = this.mouse, follow = 1 - Math.exp(-dt * 2.5); // 부드럽게 따라감
+    m.sx += (m.x - m.sx) * follow; m.sy += (m.y - m.sy) * follow;
+    const p = THREE.MathUtils.degToRad(CITY.pitch + m.sy * CITY.sway[1]), a = THREE.MathUtils.degToRad(CITY.yaw - m.sx * CITY.sway[0]);
     cam.position.set(D * Math.sin(p) * Math.sin(a), D * Math.cos(p), D * Math.sin(p) * Math.cos(a));
     cam.lookAt(0, 0, 0);
     // 매장 점을 화면 오른쪽(시안 x≈1250)으로: 왼쪽 매장 카드와 겹치지 않게 그림 전체를 옮김
