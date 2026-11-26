@@ -33,7 +33,7 @@ function paintScene(cam){
   if(selected!==heroIds[index])selected=0;
   guides.hidden=!show;scene.toggleAttribute('data-object-hover',selected>0);
 
-  render(cam,dark,selected);
+  render(cam,lightLevel(performance.now()),selected);
 }
 function project(x,y,z,c){
   const dx=x-c.x,dz=z-c.z,depth=dx*Math.sin(c.yaw)-dz*Math.cos(c.yaw),up=y-1.57;
@@ -285,12 +285,51 @@ world.addEventListener('touchend',e=>{
   touchY=null;
 },{passive:true});
 world.addEventListener('touchcancel',()=>{touchY=null});
-try{dark=localStorage.getItem('room-atlas-theme')!=='light';}catch{}
-function theme(){
-  document.documentElement.dataset.theme=dark?'dark':'light';$('theme').setAttribute('aria-pressed',String(dark));
-  $('themeLabel').textContent=dark?'다크 모드':'라이트 모드';schedule();
+const lightButton=$('theme');
+let lightFade=null;
+try{
+  dark=localStorage.getItem('room-atlas-theme')!=='light';
+  lightButton.classList.toggle('used',localStorage.getItem('room-atlas-cord-used')==='1');
+}catch{}
+function lightLevel(now){
+  const end=dark?0:1;
+  if(!lightFade||reduced.matches)return end;
+  const t=Math.max(0,Math.min(1,(now-lightFade.start)/480));
+  if(t===1){lightFade=null;return end}
+  schedule();
+  return lightFade.from+(end-lightFade.from)*smooth(t);
 }
-$('theme').onclick=()=>{dark=!dark;try{localStorage.setItem('room-atlas-theme',dark?'dark':'light');}catch{}theme();};
+function theme(){
+  document.documentElement.dataset.theme=dark?'dark':'light';
+  $('themeLabel').textContent=dark?'불 켜기':'불 끄기';schedule();
+}
+lightButton.addEventListener('pointerenter',e=>{
+  if(e.pointerType!=='touch')lightButton.classList.add('pointed');
+});
+lightButton.addEventListener('pointerleave',()=>lightButton.classList.remove('pointed'));
+lightButton.addEventListener('blur',()=>lightButton.classList.remove('dismissed'));
+lightButton.onclick=()=>{
+  const now=performance.now();
+  lightFade=reduced.matches?null:{from:lightLevel(now),start:now+100};
+  dark=!dark;
+  lightButton.classList.add('used','dismissed');
+  lightButton.classList.remove('pointed');
+  if(!reduced.matches){
+    for(const part of lightButton.querySelector('.cord').children){
+      const initial=getComputedStyle(part).transform;
+      part.getAnimations().forEach(a=>a.cancel());
+      const stem=part.classList.contains('thread');
+      part.animate([{transform:initial},{transform:stem?'scaleY(1.2)':'translateY(6px)',offset:.32},
+        {transform:stem?'scaleY(.979)':'translateY(-.63px)',offset:.76},{transform:'none'}],
+        {duration:340,easing:'ease-in-out'});
+    }
+  }
+  try{
+    localStorage.setItem('room-atlas-theme',dark?'dark':'light');
+    localStorage.setItem('room-atlas-cord-used','1');
+  }catch{}
+  theme();
+};
 function step(direction){
   const next=Math.max(0,Math.min(cameras.length-1,index+direction));
   if(approach?.direction===direction)return;

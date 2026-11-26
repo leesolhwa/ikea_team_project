@@ -1,5 +1,5 @@
 const sceneLineWidth=0.7;
-function lineOpacity(dark){return dark ? 0.25 : 0.37;}
+function lineOpacity(light){return .25+.12*light;}
 function makeRenderer(canvas){
   const gl=canvas.getContext('webgl',{antialias:true,alpha:false,preserveDrawingBuffer:true});
   if(!gl)return painter(canvas);
@@ -32,12 +32,12 @@ function makeRenderer(canvas){
   gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);
   // Native WebGL lines can be limited to one raster pixel. Map that pixel to the requested CSS stroke width.
   gl.lineWidth(1);
-  return function(cam,dark,selected=0){
+  return function(cam,light,selected=0){
     resizeCanvas(canvas,1/sceneLineWidth);const {width:w,height:h}=canvas;
-    const [back,outline]=colors(dark).map(hex=>[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255));
+    const [back,outline]=colors(light).map(rgb=>rgb.map(v=>v/255));
     gl.viewport(0,0,w,h);gl.clearColor(...back,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
     gl.uniform3fv(u.paper,back);gl.uniform3fv(u.edge,outline);
-    gl.uniform1f(u.opacity,lineOpacity(dark));
+    gl.uniform1f(u.opacity,lineOpacity(light));
     gl.uniform1f(u.selected,selected);
     gl.uniform2f(u.haloOffset,0,0);gl.uniform1f(u.alpha,1);
     gl.uniform3f(u.eye,cam.x,1.57,cam.z);gl.uniform4f(u.rot,Math.cos(cam.yaw),Math.sin(cam.yaw),Math.cos(cam.pitch),Math.sin(cam.pitch));
@@ -61,7 +61,10 @@ function makeRenderer(canvas){
     }
   };
 }
-function colors(dark){return dark?['#030817','#FFFFFF']:['#FFFFFF','#808080'];}
+function colors(light){
+  const edge=255-127*light;
+  return [[3+252*light,8+247*light,23+232*light],[edge,edge,edge]];
+}
 function resizeCanvas(c,s=Math.min(window.devicePixelRatio||1,1.6)){
   const w=Math.round(c.clientWidth*s),h=Math.round(c.clientHeight*s);
   if(c.width!==w||c.height!==h){c.width=w;c.height=h;}
@@ -98,9 +101,9 @@ function makePicker(){
 // Depth-sorted perspective is also available when hardware acceleration is off.
 function painter(c){
   const ctx=c.getContext('2d');
-  return function(cam,dark,selected=0){
+  return function(cam,light,selected=0){
     resizeCanvas(c);const w=c.width,h=c.height,k=h*(w/h<1?1.22:1.53)/2;
-    const [bg,outline]=colors(dark),cy=Math.cos(cam.yaw),sy=Math.sin(cam.yaw),cp=Math.cos(cam.pitch),sp=Math.sin(cam.pitch);
+    const [bg,outline]=colors(light).map(rgb=>'rgb('+rgb.join(',')+')'),cy=Math.cos(cam.yaw),sy=Math.sin(cam.yaw),cp=Math.cos(cam.pitch),sp=Math.sin(cam.pitch);
     function view([x,y,z]){x-=cam.x;z-=cam.z;y-=1.57;const d=x*sy-z*cy;return [x*cy+z*sy,y*cp-d*sp,d*cp+y*sp];}
     function clip(a,b){let t=(.07-a[2])/(b[2]-a[2]);return [a[0]+t*(b[0]-a[0]),a[1]+t*(b[1]-a[1]),.07];}
     function screen(p){return [w/2+p[0]*k/p[2],h/2-p[1]*k/p[2]];}
@@ -123,7 +126,7 @@ function painter(c){
       }
       else{
         const glow=selected>0&&selected===id;
-        ctx.globalAlpha=glow ? 0.90 : heroIds.includes(id) ? .66 : lineOpacity(dark);ctx.shadowColor=outline;
+        ctx.globalAlpha=glow ? 0.90 : heroIds.includes(id) ? .66 : lineOpacity(light);ctx.shadowColor=outline;
         ctx.shadowBlur=glow?3*w/c.clientWidth:0;ctx.stroke();ctx.shadowBlur=0;
       }
     }
