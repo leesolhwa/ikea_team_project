@@ -59,7 +59,6 @@ const R = 2;      // 지구본 반지름
 const FOV = 30;
 const KOREA = { lat: 36.5, lon: 127.8 };
 const EUROPE = { lat: 44, lon: 16 };   // 시안 3번 화면에서 정면에 보이는 곳
-const FIRST = 'gangdong';              // 시안 4번 화면: 서울에 핀 하나
 const DEFAULT = 'pangyo';              // 시안 5번 화면: 처음 보이는 매장 카드
 const C = { ivory: '#fcfaf6', line: '#e6e3dd', grat: '#bdb6ab', navy: '#000c44', yellow: '#ffc800', ocean: '#f9f7f2', land: '#dddcd8', edge: '#bebbb5', krEdge: '#b2aea7' };
 /** 구간 값: keys = [[pin, 값], ...] 사이를 부드럽게 잇습니다 */
@@ -547,15 +546,22 @@ export class StoresSection extends BaseSection {
     const t = Math.tan(THREE.MathUtils.degToRad(FOV / 2));
     this.D0 = Math.max((2 * R) / (0.741 * 2 * t), (2 * R) / (0.417 * 2 * t * (w / h)));
     this.vw = w; this.vh = h;
-    // 한반도 지도: 메뉴 아래 높이에 남한(제주 포함)이 다 들어가게, 지도 이미지는 화면을 꽉 채움
     const nav = (96 / 1080) * h;
-    const k = Math.min((h - nav) / 1010, w / 1150);
-    const cx = (936 / 1920) * w, cy = nav + 392 * k;
+    // 남한 본토(서울 위 ~ 부산·광주 아래, 위도 약 3.25도)가 메뉴 아래 높이를 채우게: 수도권 점 사이가 넉넉해 누르기 쉬움 (제주는 아래로 벗어남, 매장 없음)
+    const k = Math.min((h - nav) / 640, w / 900);
+    const cx = (936 / 1920) * w, cy = nav + (h - nav) / 2;
     Object.assign(this.dom.map.style, {
       width: `${MAP.w * k}px`, left: `${cx - MAP.cx * k}px`, top: `${cy - MAP.cy * k}px`,
       transformOrigin: `${(MAP.cx / MAP.w) * 100}% ${(MAP.cy / MAP.h) * 100}%`,
     });
     this.mapOrigin = this.dom.map.style.transformOrigin;
+    // 매장 점마다 마우스가 닿는 영역을 이웃 점과 겹치기 직전까지 넓힘 (최대 지름 120px)
+    const xy = this.dom.pins.map((b) => { const st = byId(b.dataset.id); const [x, y] = mapXY(st.lat, st.lon); return [x * k, y * k]; });
+    this.dom.pins.forEach((b, i) => {
+      let near = Infinity;
+      xy.forEach((p, j) => { if (j !== i) near = Math.min(near, Math.hypot(p[0] - xy[i][0], p[1] - xy[i][1])); });
+      b.style.setProperty('--hit', `${Math.max(24, Math.min(120, near - 2)).toFixed(0)}px`);
+    });
     this.mapAt = { k, cx, cy };
   }
 
@@ -604,20 +610,21 @@ export class StoresSection extends BaseSection {
     this.tilt.visible = globeOn;
     this.face.visible = reveal < 1;
     this.camera.near = 0.01;
-    if (turn <= 0) {
-      this.from = null;
-      if (pin >= T.spin[0] && pin < T.turn[0]) this.spin += dt * 0.1; // 시안 3번(유럽 정면)에서 출발해 제자리 자전
-    } else if (this.from === null) {
-      this.from = this.spin;
+    // 지구본 회전: 보이는 동안 늘 동쪽(한반도 쪽)으로 천천히 돌고, 한반도 구간에 들어오면 정면까지 이어서 돌아감.
+    // 돌아가는 정도 = max(시간, 스크롤): 스크롤을 멈춰도 2.5초에 걸쳐 저절로 끝까지 돌고, 빨리 스크롤하면 그만큼 빨리 돎 → 멈칫·뚝뚝 없음
+    this.turnT = clamp((this.turnT || 0) + (pin > T.turn[0] ? 1 : -1) * (dt / 2.5));
+    const turnR = Math.max(turn, ease.inOut(this.turnT));
+    const korea = yawFor(KOREA.lat, KOREA.lon);
+    if (turnR <= 0) this.from = null;
+    else if (this.from === null) this.from = this.spin; // 한반도로 돌기 시작한 각도
+    const goal = this.from === null ? null : korea + Math.PI * 2 * Math.floor((this.from - korea) / (Math.PI * 2)); // 지금보다 동쪽의 한반도 각도
+    if (pin > T.grow[0] && reveal <= 0) {
+      this.spin -= dt * 0.1 * (1 - turnR); // 저절로 도는 속도: 한반도에 가까워질수록 줄어 정면에서 멈춤
+      if (goal !== null) this.spin = Math.max(this.spin, goal);
     }
-    let yaw = this.spin;
-    if (this.from !== null) {
-      const target = yawFor(KOREA.lat, KOREA.lon);
-      const k = Math.round((this.from - target) / (Math.PI * 2));
-      yaw = lerp(this.from, target + k * Math.PI * 2, turn);
-    }
+    const yaw = goal === null ? this.spin : lerp(this.spin, goal, turnR);
     this.globe.rotation.y = yaw;
-    this.tilt.rotation.x = lerp(THREE.MathUtils.degToRad(EUROPE.lat), THREE.MathUtils.degToRad(KOREA.lat), turn);
+    this.tilt.rotation.x = lerp(THREE.MathUtils.degToRad(EUROPE.lat), THREE.MathUtils.degToRad(KOREA.lat), turnR);
     const s = lerp(0.27, 1, grow);
     this.tilt.scale.setScalar(s);
 
@@ -668,11 +675,11 @@ export class StoresSection extends BaseSection {
 
     // ---- 평면 지도 (시안 4·5번) ----
     d.map.classList.toggle('is-on', pin > T.first[0] + 0.01 && pin < T.family[0] + 0.01);
-    // 4번에서는 서울(강동) 점 하나만, 5번에서 나머지가 차례로
-    d.pins.forEach((b, i) => {
-      const a = b.dataset.id === FIRST ? at(pin, T.first) : seg(pin, T.dim[0] + (i % 6) * 0.006, T.dim[0] + 0.03 + (i % 6) * 0.006);
-      b.style.setProperty('--pop', ease.out(a).toFixed(3));
-    });
+    // 한반도 지도가 펼쳐지면 매장 점이 스크롤과 상관없이 한 번에 톡 나타남 (되돌아가면 다시 사라짐)
+    const popOn = pin > T.first[0] && pin < T.family[0] + 0.01;
+    this.popK = clamp((this.popK || 0) + (popOn ? 1 : -1) * (dt / 0.45));
+    const pk = this.popK, back = 1 + 2.2 * (pk - 1) ** 3 + 1.2 * (pk - 1) ** 2; // 살짝 커졌다 제자리 (ease-out-back)
+    d.dots.style.setProperty('--pop', (pk > 0 ? back : 0).toFixed(3));
     // 매장 카드: 핀에 마우스를 올렸을 때만
     const mapLive = pin > T.first[0] + 0.01 && pin < T.family[0] + 0.01;
     d.card.classList.toggle('is-on', mapLive && !!this.hovering);
