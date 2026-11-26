@@ -352,6 +352,9 @@ export class StoresSection extends BaseSection {
     this.markMat.opacity = pinsUp * (1 - ease.inOut(seg(reveal, 0.2, 0.5)));
     this.markKrMat.opacity = pinsUp * (1 - ease.inOut(seg(reveal, 0.6, 0.9)));
 
+    this.camera.position.set(0, 0, camD);
+    this.camera.lookAt(0, 0, 0);
+
     this.face.quaternion.copy(this.camera.quaternion);
     this.camera.updateProjectionMatrix();
     this.camera.updateMatrixWorld();
