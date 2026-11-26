@@ -14,9 +14,9 @@ import { STORES, COUNTRIES, FAMILY } from './data.js';
 
 // ▼ 교체 포인트
 const FILES = {
-  land: 'assets/images/stores/globe-land.png',     // 지구본 대륙 (Natural Earth: 회색 대륙 + 나라 경계선)
-  korea: 'assets/images/stores/korea-line.png',    // 한반도 라인 지도 (해안선 + 도 경계선, 지구본 정면과 같은 정사영)
-  family: 'assets/images/stores/family-billy.jpg', // 시안 FAMILY 사진
+  land: 'assets/images/stores/globe-land.webp',     // 지구본 대륙 (Natural Earth: 회색 대륙 + 나라 경계선)
+  korea: 'assets/images/stores/korea-line.webp',    // 한반도 라인 지도 (해안선 + 도 경계선, 지구본 정면과 같은 정사영)
+  family: 'assets/images/stores/family-billy.webp', // 시안 FAMILY 사진
 };
 
 /** 스크롤 구간 (pin 0~1) */
