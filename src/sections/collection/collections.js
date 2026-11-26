@@ -252,11 +252,7 @@ for (const icon of document.querySelectorAll(exitIcons)) {
   icon.style.cursor = "pointer";
 }
 function exitToMain() {
-  const main = new URL("../../../", location.href).pathname;
-  const from = document.referrer && new URL(document.referrer);
-  // 메인에서 들어왔으면 뒤로 가기로 돌아가 메인의 원래 위치를 유지합니다.
-  if (from && from.origin === location.origin && (from.pathname === main || from.pathname === main + "index.html")) history.back();
-  else location.href = "../../../index.html";
+  location.href = "../../../index.html?room=ikea-ps";
 }
 addEventListener("click", e => {
   if (!e.target.closest(exitIcons)) return;

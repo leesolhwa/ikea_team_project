@@ -265,7 +265,4 @@ renderer.setAnimationLoop(t => {
 // ---- 평수 전환: 15평 모델은 아직 없어서 안내만 띄움 (모델이 생기면 여기서 불러오면 됨)
 { const bs = [...document.querySelectorAll('#size button')], soon = document.getElementById('soon');
   for (const b of bs) b.onclick = () => { for (const o of bs) { const on = o === b; o.classList.toggle('on', on); o.setAttribute('aria-pressed', on); } soon.classList.toggle('on', b.dataset.size === '15'); if (b.dataset.size !== '15') renderer.domElement.focus(); }; }
-// ---- 나가기: 메인에서 들어왔으면 뒤로 가기로 돌아가 메인의 원래 위치(3D룸 앞)를 유지 (컬렉션 페이지와 같은 방식). 주소로 바로 들어온 경우엔 메인으로 이동
-document.querySelector('.exit').addEventListener('click', e => { const main = new URL('../../../', location.href).pathname, from = document.referrer && new URL(document.referrer);
-  if (from && from.origin === location.origin && (from.pathname === main || from.pathname === main + 'index.html')) { e.preventDefault(); history.back(); } });
 </script></body></html>

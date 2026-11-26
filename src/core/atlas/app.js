@@ -33,7 +33,7 @@ function paintScene(cam){
   if(selected!==heroIds[index])selected=0;
   guides.hidden=!show;scene.toggleAttribute('data-object-hover',selected>0);
 
-  render(cam,dark,selected);
+  render(cam,lightLevel(performance.now()),selected);
 }
 function project(x,y,z,c){
   const dx=x-c.x,dz=z-c.z,depth=dx*Math.sin(c.yaw)-dz*Math.cos(c.yaw),up=y-1.57;
@@ -93,7 +93,8 @@ dialog.addEventListener('scroll',()=>{
   [...$('chapters').children].forEach((b,i)=>b.setAttribute('aria-current',String(i===active)));
 },{passive:true});
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');
-let index=new URLSearchParams(location.search).get('room')==='store-family'?3:0,detailIndex=-1,dark=true,frame=0,busy=false;
+const initialRoom=new URLSearchParams(location.search).get('room');
+let index=Math.max(0,rooms.findIndex(room=>room.id===initialRoom)),detailIndex=-1,dark=true,frame=0,busy=false;
 const cameras=[
  {name:'About',x:4.25,z:15,yaw:.62},
  {name:'IKEA PS',x:8.9,z:.40,yaw:-2.45},
@@ -208,6 +209,7 @@ function goTo(next,direction=0){
   const leavingFooter=index===rooms.length;
   if(busy||dialog.open||next<0||next>=cameras.length||next===index)return;
   if(direction&&now<holdUntil&&!enteringFooter&&!leavingFooter)return;
+  press=null;
   tourView(now);
   const fromMap=mapPosition(now);
   index=next;clearPointer();mapTween=null;
@@ -276,6 +278,10 @@ function draw(){
   document.body.classList.toggle('show-footer',atExit||Boolean(finishingWalk));
   tourFooter.inert=!atExit;
   updateTourMap(performance.now());
+  const ready=canEnterRoom();
+  scene.toggleAttribute('data-room-ready',ready);
+  world.setAttribute('aria-disabled',String(!ready));
+  world.setAttribute('aria-label',ready?rooms[index].name+' 상세페이지 열기':'공간 탐색');
   if(!caption.hidden){$('enter').textContent=rooms[index].name;$('enter').href=rooms[index].page||'#'+rooms[index].id;$('enter').setAttribute('aria-label',rooms[index].name+' 상세페이지')}
 }
 let touchY=null;
@@ -285,12 +291,51 @@ world.addEventListener('touchend',e=>{
   touchY=null;
 },{passive:true});
 world.addEventListener('touchcancel',()=>{touchY=null});
-try{dark=localStorage.getItem('room-atlas-theme')!=='light';}catch{}
-function theme(){
-  document.documentElement.dataset.theme=dark?'dark':'light';$('theme').setAttribute('aria-pressed',String(dark));
-  $('themeLabel').textContent=dark?'다크 모드':'라이트 모드';schedule();
+const lightButton=$('theme');
+let lightFade=null;
+try{
+  dark=localStorage.getItem('room-atlas-theme')!=='light';
+  lightButton.classList.toggle('used',localStorage.getItem('room-atlas-cord-used')==='1');
+}catch{}
+function lightLevel(now){
+  const end=dark?0:1;
+  if(!lightFade||reduced.matches)return end;
+  const t=Math.max(0,Math.min(1,(now-lightFade.start)/480));
+  if(t===1){lightFade=null;return end}
+  schedule();
+  return lightFade.from+(end-lightFade.from)*smooth(t);
 }
-$('theme').onclick=()=>{dark=!dark;try{localStorage.setItem('room-atlas-theme',dark?'dark':'light');}catch{}theme();};
+function theme(){
+  document.documentElement.dataset.theme=dark?'dark':'light';
+  $('themeLabel').textContent=dark?'불 켜기':'불 끄기';schedule();
+}
+lightButton.addEventListener('pointerenter',e=>{
+  if(e.pointerType!=='touch')lightButton.classList.add('pointed');
+});
+lightButton.addEventListener('pointerleave',()=>lightButton.classList.remove('pointed'));
+lightButton.addEventListener('blur',()=>lightButton.classList.remove('dismissed'));
+lightButton.onclick=()=>{
+  const now=performance.now();
+  lightFade=reduced.matches?null:{from:lightLevel(now),start:now+100};
+  dark=!dark;
+  lightButton.classList.add('used','dismissed');
+  lightButton.classList.remove('pointed');
+  if(!reduced.matches){
+    for(const part of lightButton.querySelector('.cord').children){
+      const initial=getComputedStyle(part).transform;
+      part.getAnimations().forEach(a=>a.cancel());
+      const stem=part.classList.contains('thread');
+      part.animate([{transform:initial},{transform:stem?'scaleY(1.2)':'translateY(6px)',offset:.32},
+        {transform:stem?'scaleY(.979)':'translateY(-.63px)',offset:.76},{transform:'none'}],
+        {duration:340,easing:'ease-in-out'});
+    }
+  }
+  try{
+    localStorage.setItem('room-atlas-theme',dark?'dark':'light');
+    localStorage.setItem('room-atlas-cord-used','1');
+  }catch{}
+  theme();
+};
 function step(direction){
   const next=Math.max(0,Math.min(cameras.length-1,index+direction));
   if(approach?.direction===direction)return;
@@ -312,8 +357,9 @@ addEventListener('keydown',e=>{
 const entryLinks='#world, #enter, #footerlinks a';
 let press=null;
 document.addEventListener('pointerdown',e=>{
-  if(!e.isPrimary)return;
+  if(!e.isPrimary||e.button!==0){press=null;return}
   const link=e.target.closest(entryLinks);
+  if((link===world||link===$('enter'))&&!canEnterRoom()){press=null;return}
   press=link?{id:e.pointerId,link,x:e.clientX,y:e.clientY,dragged:false}:null;
 },true);
 function trackPress(e){
@@ -400,8 +446,14 @@ for(const [i,r] of rooms.entries()){
   a.onclick=e=>enter(e,i);$('footerlinks').append(a);
 }
 function leave(){
+  index=detailIndex;
   if(history.state?.roomTour)history.back();
-  else{history.replaceState(null,'',location.pathname+location.search);syncDetail()}
+  else{
+    const url=new URL(location.href);
+    url.hash='';
+    url.searchParams.set('room',rooms[index].id);
+    history.replaceState(null,'',url);syncDetail();
+  }
 }
 $('back').onclick=leave;dialog.oncancel=e=>{e.preventDefault();leave()};
 addEventListener('popstate',syncDetail);
@@ -469,12 +521,13 @@ function updateTourMap(now){
   });
 }
 
-function hitsObject(x,y){
-  if(approach||index>=rooms.length||busy||dialog.open)return false;
-  const r=world.getBoundingClientRect();
-  return pick(tourView(performance.now()),x-r.left,y-r.top,r.width,r.height)===heroIds[index];
+function canEnterRoom(){
+  return index<rooms.length&&!approach&&!busy&&!dialog.open;
 }
 world.addEventListener('click',e=>{
-  if(e.detail&&hitsObject(e.clientX,e.clientY))enter(e,index);
+  if(e.detail&&canEnterRoom())enter(e,index);
 });
-new ResizeObserver(schedule).observe(world);theme();syncDetail();if(index===0&&!dialog.open&&!reduced.matches)walkIn();
+world.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.repeat&&canEnterRoom())enter(e,index);
+});
+new ResizeObserver(schedule).observe(world);theme();syncDetail();if(index===0&&initialRoom!=='about'&&!dialog.open&&!reduced.matches)walkIn();

@@ -1,6 +1,6 @@
 # IKEA 포트폴리오 공통 뼈대
 
-기본 화면은 Room Atlas입니다. 스크롤할 때마다 다음 방의 대표 오브제 앞까지 걸어가고, 오브제나 방 제목을 클릭하면 상세페이지가 열립니다. 미니맵에는 현재 위치까지의 동선이 표시됩니다. 방 순서는 About → IKEA PS → 3D room → Store & Family → Restaurant → 출구입니다.
+기본 화면은 Room Atlas입니다. 스크롤하면 다음 방으로 걸어갑니다. 도착 후 방의 배경, 가구 또는 제목을 클릭하면 해당 상세페이지가 열립니다. 오른쪽 위 당김줄로 조명을 켜고 끌 수 있습니다. 미니맵에는 현재 위치까지의 동선이 표시됩니다. 방 순서는 About → IKEA PS → 3D room → Store & Family → Restaurant → 출구입니다.
 
 ## 실행과 수정
 
@@ -13,19 +13,25 @@
 
 페이지를 만든 PR에서 **연결까지 같이** 해야 머지하자마자 메인에서 열립니다. 연결을 빼먹으면 페이지는 있어도 메인에서 안 열립니다.
 
-1. 페이지를 `src/sections/<내 폴더>/<이름>.html`로 만들고, 메인으로 돌아가는 링크(`../../../index.html`)를 넣습니다.
+1. 페이지를 `src/sections/<내 폴더>/<이름>.html`로 만듭니다. **‘나가기’의 목적지는 해당 섹션의 방 앞**입니다. 링크에 `../../../index.html?room=<방 id>`를 넣습니다. 레스토랑 예시는 다음과 같습니다.
+
+   ```html
+   <a href="../../../index.html?room=restaurant">나가기</a>
+   ```
+
+   `?room=restaurant`는 미니맵 5번 방에 카메라를 놓고, `#restaurant`는 상세페이지를 엽니다. 방 id는 아래 표의 첫 열에서 가져옵니다. 기본 메인 주소만 쓰면 입구에서 시작합니다. 브라우저 뒤로 가기는 방문 기록을 따르므로 ‘나가기’ 버튼은 위 링크로 직접 연결합니다.
 2. `src/core/atlas/app.js` 맨 위 `rooms`에서 **내 방 항목에만** `page:'경로'`를 추가합니다. 이 한 줄 외에는 고치지 않습니다.
 
    ```js
    {id:'restaurant',name:'Restaurant',ko:'키친 & 다이닝',page:'./src/sections/food/restaurant.html', ...
    ```
-3. 로컬 서버에서 메인 → 내 방 입장 → 예전 상세 화면 없이 바로 내 페이지가 열리는지, 뒤로 가기가 되는지 확인합니다.
+3. 로컬 서버에서 방 클릭, 메인 푸터 링크, 상세 주소 직접 접속으로 각각 상세페이지에 들어갑니다. 세 경우 모두 ‘나가기’를 눌렀을 때 해당 방 제목과 미니맵 번호가 바로 표시되는지 확인합니다. 브라우저의 뒤로 가기도 별도로 확인합니다.
 
 | 방 id | 연결된 페이지 |
 | --- | --- |
 | `about` | (아직 없음) |
 | `ikea-ps` | `./src/sections/collection/collection.html` |
-| `3d-room` | (아직 없음) |
+| `3d-room` | `./src/sections/rooms/room3d.html` |
 | `store-family` | (아직 없음) |
 | `restaurant` | `./src/sections/food/restaurant.html` |
 
