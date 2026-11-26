@@ -111,7 +111,8 @@
   // x, y는 시안 좌표의 중심점. tail 위쪽 끝이 y = 0
   function place(el, x, y, r, k) {
     el.style.visibility = 'visible';
-    el.style.transform = `translate(${x * k - 182.65}px, ${y * k - 307.3}px) rotate(${r}deg) scale(${k})`;
+    el.base = `translate(${x * k - 182.65}px, ${y * k - 307.3}px) rotate(${r}deg) scale(${k})`;
+    el.style.transform = el.base + (el.tilt || '');
   }
   const tailX = x => x - 960; // tail 영수증은 left: 50% 기준
   const endY = () => 1238 + Math.max(vh / s, 1000) / 2 + 2.4;
@@ -310,6 +311,74 @@
     pinEnd = pinTop + pin.offsetHeight - vh;
     tailTop = tail.getBoundingClientRect().top + scrollY;
   }
+  /* 영수증 3D — Three.js(팀 프로젝트와 같은 0.170.0)로 종이를 휘고 말아서 그린다.
+     불러오지 못하면 지금처럼 평평한 그림이 그대로 보인다. */
+  const ROLLUP = { max: 200, end: 22, radius: 22, lean: 24 }; // 말린 길이(시안 px), 엔딩에 남는 말림, 두루마리 반지름, 뒤로 눕힌 각도(도)
+  const PAPER = { w: 365.3, h: 614.6 }, PAD = { x: 110, top: 90, bottom: 130 };
+  const paper3d = { roll: 0, tiltX: 0, tiltY: 0, wave: 0, phase: 0, host: null, draw: null };
+  function setRoll(el, roll) { useHost(el); if (Math.abs(roll - paper3d.roll) > .2) { paper3d.roll = Math.max(0, roll); paper3d.dirty = true; } }
+  function useHost(el) {
+    if (paper3d.host === el || !paper3d.canvas) return;
+    paper3d.host = el; el.append(paper3d.canvas); el.classList.add('is-3d'); paper3d.dirty = true;
+    [stageReceipt, tailReceipt].forEach(o => { if (o !== el) o.classList.remove('is-3d'); });
+  }
+  import('https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js').then(THREE => {
+    const W = PAPER.w, H = PAPER.h, CW = W + PAD.x * 2, CH = H + PAD.top + PAD.bottom;
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2) * 1.25);
+    renderer.setSize(CW, CH, false);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    const scene = new THREE.Scene();
+    // 종이 한 장(z = 0)이 화면에서 원래 크기 그대로 보이도록 카메라 거리를 맞춘다
+    const fov = 16, cy = (PAD.top - PAD.bottom) / 2;
+    const camera = new THREE.PerspectiveCamera(fov, CW / CH, 10, 20000);
+    camera.position.set(0, cy, (CH / 2) / Math.tan(fov * Math.PI / 360));
+    camera.lookAt(0, cy, 0);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0xbdb6aa, 1.7));
+    const sun = new THREE.DirectionalLight(0xffffff, 2.3); sun.position.set(-220, 700, 600); scene.add(sun);
+    const tex = new THREE.TextureLoader().load('../../../assets/images/food/restaurant/receipt.png', img => {
+      // 뒷면용: 글자는 지우고 종이 모양(톱니 끝)만 남긴 흰 종이
+      const cv = document.createElement('canvas'); cv.width = img.image.width; cv.height = img.image.height;
+      const g = cv.getContext('2d'); g.drawImage(img.image, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height);
+      back.map = new THREE.CanvasTexture(cv); back.map.colorSpace = THREE.SRGBColorSpace; back.needsUpdate = true;
+      paper3d.dirty = true; paper3d.ready = true;
+    });
+    tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    // 세로로 촘촘하게 나눈 면 하나를 앞면(그림)과 뒷면(빈 종이)이 함께 쓴다
+    const geo = new THREE.PlaneGeometry(W, H, 10, 220);
+    const base = geo.attributes.position.array.slice();
+    const front = new THREE.MeshStandardMaterial({ map: tex, alphaTest: .5, roughness: .92, side: THREE.FrontSide });
+    const back = new THREE.MeshStandardMaterial({ color: 0xf3f0ea, alphaTest: .5, roughness: .95, side: THREE.BackSide });
+    const sheet = new THREE.Group(); sheet.add(new THREE.Mesh(geo, front), new THREE.Mesh(geo, back)); scene.add(sheet);
+    function shape() {
+      const pos = geo.attributes.position.array, L = H - paper3d.roll, R0 = ROLLUP.radius;
+      for (let i = 0; i < pos.length; i += 3) {
+        const x = base[i], s = H / 2 - base[i + 1]; // s: 위에서부터 잰 종이 길이
+        let y = s, z = 0;
+        if (s > L) {
+          // 아래쪽 끝이 앞으로 감기는 나선. 안쪽일수록 반지름이 조금씩 작아진다
+          const th = (s - L) / R0, R = Math.max(5, R0 - 1.7 * th / (Math.PI * 2));
+          y = L + R * Math.sin(th); z = R * (1 - Math.cos(th));
+        }
+        // 펴진 부분만 살랑이는 물결과 좌우가 살짝 오목한 종이결
+        const flat = clamp((L - s) / 60);
+        z += flat * (paper3d.wave * Math.sin(s / 95 - paper3d.phase) * (.55 + .45 * s / H) + 3 * (x / (W / 2)) ** 2);
+        pos[i + 1] = H / 2 - y; pos[i + 2] = z;
+      }
+      geo.attributes.position.needsUpdate = true; geo.computeVertexNormals();
+    }
+    paper3d.canvas = renderer.domElement;
+    paper3d.draw = () => {
+      if (!paper3d.dirty || !paper3d.ready || !paper3d.host) return;
+      paper3d.dirty = false;
+      shape();
+      // 종이를 살짝 뒤로 눕혀, 위에서 내려다보듯 말린 두루마리가 보이게 한다. 펴질수록 똑바로 선다
+      const lean = -ROLLUP.lean * clamp(paper3d.roll / ROLLUP.max);
+      sheet.rotation.set((lean + paper3d.tiltX) * Math.PI / 180, paper3d.tiltY * Math.PI / 180, 0);
+      renderer.render(scene, camera);
+    };
+    useHost(stageReceipt.style.visibility === 'visible' ? stageReceipt : tailReceipt);
+  }).catch(() => {});
   function renderReceipt() {
     const bottom = 500 + vh / (2 * s);           // 고정 화면 아래쪽 끝(시안 좌표)
     const gone = (vh - tailTop + scrollY) / s;   // tail이 화면에 들어온 높이(시안 px)
@@ -317,16 +386,22 @@
       const left = 1 - ease(clamp((state.p - LAST - .4) / (RECEIPT_STEPS - .75)));
       tailReceipt.style.visibility = 'hidden';
       if (left >= 1) { stageReceipt.style.visibility = 'hidden'; return; }
+      flutter.amp = .3; // 사선에서 나올 때는 끝만 살짝 떨린다
+      setRoll(stageReceipt, ROLLUP.max * ease(clamp((1 - left) * 1.5))); // 먼저 나온 아래쪽이 말린다
       place(stageReceipt, P6.x - AXIS.x * FEED * left, P6.y - AXIS.y * FEED * left, P6.r, 1);
       return;
-    }    // 6 → 7 → 8을 속도가 끊기지 않는 하나의 곡선으로 잇는다
+    }
+    // 6 → 7 → 8을 속도가 끊기지 않는 하나의 곡선으로 잇는다
     const view = vh / s, ey = endY();
     const mid = P7.y + view / 2, full = Math.min(ey + view / 2, 1238 + Math.max(view, 1000) - 1);
     const path = (a, b, c, sa, sb, sc) => gone < mid ? hermite(a, b, sa, sb, mid, gone) : hermite(b, c, sb, sc, full - mid, Math.min(gone, full) - mid);
     const x = path(P6.x, P7.x, P8.x, 0, -.45, 0);
     const y = path(P6.y - bottom, P7.y, ey, 1, .85, .6);
     const r = path(P6.r, P7.r, P8.r, 0, 0, 0);
+    // 팔랑임 세기: 접시 사이를 내려올 때 가장 크고, 엔딩에 가까워질수록 잦아든다
+    flutter.amp = gone < mid ? mix(.3, 1, ease(clamp(gone / (mid * .5)))) : 1 - ease(clamp((gone - mid) / (full - mid)));
     stageReceipt.style.visibility = 'hidden';
+    setRoll(tailReceipt, mix(ROLLUP.max, ROLLUP.end, ease(clamp(gone / full)))); // 내려오며 스르륵 풀린다
     place(tailReceipt, tailX(x), y, r, s);
     // 사선에 걸린 부분만 영수증 자체에서 잘라 낸다
     const th = r * Math.PI / 180, cos = Math.cos(th), sin = Math.sin(th);
@@ -382,9 +457,10 @@
     });
   }
   /* 7. 흩어진 접시 — 나타나는 동작과 패럴랙스를 스크롤 하나로 처리 */
+  const ROLL = 28; // 스크롤하는 동안 접시가 살짝 도는 정도(도). 화면 가운데에서 똑바로 선다
   const dishes = $$('.dishes .plate').map((el, i) => ({ el, i, depth: +el.dataset.s * 1.6, top: parseFloat(el.style.top) }));
   dishes.forEach(d => d.el.decode().catch(() => {}));
-  tailReceipt.decode().catch(() => {});
+  $('img', tailReceipt).decode().catch(() => {});
   function renderDishes() {
     const gone = vh - tailTop + scrollY;
     dishes.forEach(d => {
@@ -394,9 +470,37 @@
       if (!show) return;
       const e = 1 - Math.pow(1 - clamp(v / .42), 3);
       d.el.style.opacity = clamp(v / .12);
-      d.el.style.transform = `translate3d(0, ${mix(d.depth, -d.depth, v)}px, 0) rotate(${(d.i % 2 ? 60 : -60) * (1 - e)}deg) scale(${mix(.7, 1, e)})`;
+      d.el.style.transform = `translate3d(0, ${mix(d.depth, -d.depth, v)}px, 0) rotate(${(d.i % 2 ? 1 : -1) * (60 * (1 - e) + ROLL * (d.depth / 128) * (v - .5))}deg) scale(${mix(.7, 1, e)})`;
     });
   }
+  /* 영수증 팔랑임 — 스크롤 속도를 받아 앞뒤로 기울고, 멈추면 몇 번 살랑이다 가라앉는다 */
+  const FLUTTER = { tilt: 14, stiff: 70, damp: 5 }; // 최대 기울기(도), 탄성, 감쇠
+  const flutter = { amp: 0, x: 0, vx: 0, y: 0, vy: 0, lastY: scrollY };
+  gsap.ticker.add((time, dtMs) => {
+    const dt = Math.min(dtMs, 50) / 1000, sy = scrollY;
+    const speed = clamp((sy - flutter.lastY) / Math.max(dt, .001) / 2500, -1, 1); // 화면 높이 대비 속도
+    flutter.lastY = sy;
+    const tx = -speed * FLUTTER.tilt * flutter.amp, ty = speed * FLUTTER.tilt * .45 * flutter.amp;
+    // 두 축의 탄성을 다르게 해서 기계적이지 않게 흔들린다
+    flutter.vx += (FLUTTER.stiff * (tx - flutter.x) - FLUTTER.damp * flutter.vx) * dt; flutter.x += flutter.vx * dt;
+    flutter.vy += (FLUTTER.stiff * .7 * (ty - flutter.y) - FLUTTER.damp * .8 * flutter.vy) * dt; flutter.y += flutter.vy * dt;
+    const still = Math.abs(flutter.x) + Math.abs(flutter.y) < .02 && Math.abs(flutter.vx) + Math.abs(flutter.vy) < .05;
+    const host = paper3d.host, k = host && host.style.clipPath && host.style.clipPath !== 'none' ? .35 : 1;
+    if (!paper3d.canvas) {
+      // 3D를 불러오기 전에는 예전처럼 화면에서 기울인다
+      [stageReceipt, tailReceipt].forEach(el => {
+        if (!el.base || el.style.visibility !== 'visible') return;
+        el.tilt = still ? '' : ` perspective(1400px) rotateX(${(flutter.x * k).toFixed(2)}deg) rotateY(${(flutter.y * k).toFixed(2)}deg)`;
+        el.style.transform = el.base + el.tilt;
+      });
+    } else if (!still || paper3d.tiltX || paper3d.wave) {
+      paper3d.tiltX = still ? 0 : flutter.x * k * .8; paper3d.tiltY = still ? 0 : flutter.y * k;
+      paper3d.wave = still ? 0 : clamp(Math.abs(flutter.x) / FLUTTER.tilt) * 9 * k; // 기울수록 종이가 물결친다
+      paper3d.phase += dt * 5; paper3d.dirty = true;
+    }
+    if (paper3d.draw) paper3d.draw();
+  });
+
   /* 8. 엔딩 */
   gsap.from('.ending .copy > *', { y: 40, autoAlpha: 0, duration: .9, stagger: .12, ease: 'power3.out', scrollTrigger: { trigger: '.ending .copy', start: 'top 75%' } });
 
