@@ -64,13 +64,15 @@ function yawFor(lat, lon) {
   const v = latLonToVec3(lat, lon, 1);
   return -Math.atan2(v.x, v.z);
 }
-/** 동그란 점 텍스처 (지구본 매장 표시) */
+/** 지구본 매장 표시 텍스처 (R2: 가운데 점 + 연한 원). 흰색이라 재질 색(남색)과 곱해짐 */
 const DOT = (() => {
   const c = document.createElement('canvas');
   c.width = c.height = 64;
   const g = c.getContext('2d');
+  g.fillStyle = 'rgba(255,255,255,0.22)';
+  g.beginPath(); g.arc(32, 32, 31, 0, Math.PI * 2); g.fill(); // 연한 원 (재질 투명도 60% × 22% ≈ 13%)
   g.fillStyle = '#fff';
-  g.beginPath(); g.arc(32, 32, 30, 0, Math.PI * 2); g.fill();
+  g.beginPath(); g.arc(32, 32, 16, 0, Math.PI * 2); g.fill(); // 가운데 점
   const t = new THREE.CanvasTexture(c);
   t.generateMipmaps = false;
   t.minFilter = THREE.LinearFilter;
@@ -230,14 +232,14 @@ export class StoresSection extends BaseSection {
     const marks = (list, size) => {
       const geo = new THREE.BufferGeometry();
       geo.setAttribute('position', new THREE.Float32BufferAttribute(list.flatMap(([lat, lon]) => latLonToVec3(lat, lon, R * 1.003).toArray()), 3));
-      const m = new THREE.PointsMaterial({ size, sizeAttenuation: false, color: C.navy, map: DOT, alphaTest: 0.5, transparent: true, opacity: 0, depthWrite: false });
+      const m = new THREE.PointsMaterial({ size, sizeAttenuation: false, color: C.navy, map: DOT, transparent: true, opacity: 0, depthWrite: false });
       const o = new THREE.Points(geo, m);
       o.renderOrder = 3;
       this.globe.add(o);
       return m;
     };
-    this.markMat = marks(COUNTRIES, 7);
-    this.markKrMat = marks([[KOREA.lat, KOREA.lon]], 10);
+    this.markMat = marks(COUNTRIES, 10);     // 점 5px + 연한 원
+    this.markKrMat = marks([[KOREA.lat, KOREA.lon]], 13);
   }
 
   /** 세계·한반도 지도를 지도 좌표로 그림 (면 = 경위도 평면에서 삼각형으로 나눈 뒤 잘게 쪼개 구에 붙임, 선 = 0.5도 간격으로 구 위를 따라감) */
@@ -428,8 +430,9 @@ export class StoresSection extends BaseSection {
     this.rimMat.opacity = wire * (1 - reveal);
     this.ovalMat.opacity = wire * (1 - grow);
     const pinsUp = ease.out(seg(pin, T.grow[0] + 0.03, T.grow[1]));
-    this.markMat.opacity = pinsUp * (1 - ease.inOut(seg(reveal, 0.2, 0.5)));
-    this.markKrMat.opacity = pinsUp * (1 - ease.inOut(seg(reveal, 0.6, 0.9)));
+    const MARK = 0.6; // 남색 60%: 회색 지구본 위에서 뜨지 않게
+    this.markMat.opacity = MARK * pinsUp * (1 - ease.inOut(seg(reveal, 0.2, 0.5)));
+    this.markKrMat.opacity = MARK * pinsUp * (1 - ease.inOut(seg(reveal, 0.6, 0.9)));
 
     this.camera.position.set(0, 0, camD);
     this.camera.lookAt(0, 0, 0);
