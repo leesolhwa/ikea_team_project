@@ -32,7 +32,7 @@
 | `about` | (아직 없음) |
 | `ikea-ps` | `./src/sections/collection/collection.html` |
 | `3d-room` | `./src/sections/rooms/room3d.html` |
-| `store-family` | (아직 없음) |
+| `store-family` | `./src/sections/stores/store-family.html` |
 | `restaurant` | `./src/sections/food/restaurant.html` |
 
 AI에게는 이렇게 말하면 됩니다: **"나는 ○○ 담당이야. 내 상세페이지 만들고 메인 ○○ 방에 연결까지 해서 PR 올려줘."**
