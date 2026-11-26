@@ -232,7 +232,7 @@ export class StoresSection extends BaseSection {
     this.cityOn = true;
     this.cityStore = store;
     this.ctx.scroll.lock('stores-city'); // 3D 지도를 보는 동안 스크롤로 다른 장면으로 넘어가지 않게
-    this.hovering = false;
+    this.pickStore(store);
     if (this.cityId === store.id) return;
     try {
       const data = await (await fetch(FILES.city(store.id))).json();
@@ -250,6 +250,7 @@ export class StoresSection extends BaseSection {
   closeCity() {
     if (!this.cityOn) return;
     this.cityOn = false;
+    this.hovering = false;
     this.ctx.scroll.unlock('stores-city');
   }
 
@@ -664,7 +665,7 @@ export class StoresSection extends BaseSection {
       this.krEdgeMat.opacity *= 1 - out;
       d.reveal.style.opacity = ((1 - fam) * (1 - out)).toFixed(3);
       d.w1.style.opacity = d.w2.style.opacity = (1 - fam) * (1 - out);
-      d.card.classList.remove('is-on');
+      d.card.classList.toggle('is-on', this.cityOn); // 동네 지도를 보는 동안 매장 정보 카드는 계속 보임
     }
     d.reveal.style.pointerEvents = ck > 0 ? 'none' : '';
     d.close.classList.toggle('is-on', this.cityOn);
