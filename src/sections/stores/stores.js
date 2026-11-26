@@ -187,6 +187,7 @@ export class StoresSection extends BaseSection {
     sun.position.set(-0.55, 1, 0.35);
     this.scene.add(sun);
     this.cityK = 0; // 0 = 한반도 지도, 1 = 매장 동네 3D
+    this.cityOn = false;
     this.far0 = this.camera.far;
     this.buildGlobe();
 
@@ -701,7 +702,7 @@ export class StoresSection extends BaseSection {
     const on = t > 0 && !!this.city && !!this.dive;
 
     d.reveal.style.pointerEvents = d.map.style.pointerEvents = t > 0 ? 'none' : '';
-    d.close.classList.toggle('is-on', this.cityOn);
+    d.close.classList.toggle('is-on', !!this.cityOn); // undefined 면 toggle 이 매 프레임 뒤집히므로 꼭 true/false 로
     d.krsvg.style.opacity = on ? '1' : '0';
     d.pins.forEach((b) => { b.style.visibility = on && b.dataset.id === this.cityStore?.id ? 'hidden' : ''; });
     if (this.city) this.city.visible = on;
