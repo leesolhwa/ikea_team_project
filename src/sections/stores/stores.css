@@ -76,10 +76,10 @@
 .sec-stores .sf-dots { position: absolute; inset: 0; }
 
 /* 매장 표시 (R2): 작은 점 + 연한 원. 정규 매장 = 남색 60%(회색 지도 위에서 뜨지 않게), 팝업 매장 = 노랑. 고른 매장만 진하게 */
-.sec-stores { --pc: #000c44; --pg: rgba(0, 12, 68, .13); }
+.sec-stores { --pc: #0c3494; --pg: rgba(12, 52, 148, .16); } /* 매장 점: 팔레트 Blue */
 .sec-stores .is-popup { --pc: #ffc800; --pg: rgba(255, 200, 0, .28); }
 .sec-stores .sf-pin {
-  --pop: 0; --a: .6;
+  --pop: 0; --a: .85;
   position: absolute; width: 7px; height: 7px; padding: 0; border: 0; border-radius: 50%; background: var(--pc); cursor: pointer;
   box-shadow: 0 0 0 3.5px var(--pg); opacity: calc(var(--pop) * var(--a));
   transform: translate(-50%, -50%) scale(calc(0.4 + 0.6 * var(--pop))); transition: box-shadow .25s, opacity .25s;
@@ -129,9 +129,9 @@
 }
 .sec-stores .sf-st i { width: 8px; height: 8px; border: 1.5px solid var(--navy); border-radius: 50%; background: var(--ivory); }
 .sec-stores .sf-cpin {
-  --pc: #000c44; --pg: rgba(0, 12, 68, .13);
+  --pc: #0c3494; --pg: rgba(12, 52, 148, .16);
   width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: var(--pc);
-  box-shadow: 0 0 0 7px var(--pg), 0 0 0 18px rgba(0, 12, 68, .06);
+  box-shadow: 0 0 0 7px var(--pg), 0 0 0 18px rgba(12, 52, 148, .07);
 }
 .sec-stores .sf-cpin.is-popup { --pc: #ffc800; --pg: rgba(255, 200, 0, .28); box-shadow: 0 0 0 7px var(--pg), 0 0 0 18px rgba(255, 200, 0, .12); }
 .sec-stores .sf-close {
