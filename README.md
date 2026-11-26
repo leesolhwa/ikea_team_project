@@ -9,6 +9,28 @@
 - 페이지 구조는 `index.html`, 테마와 전환 스타일은 `src/styles/atlas.css`에서 수정합니다.
 - 상세페이지 바로가기는 `#about`, `#ikea-ps`, `#3d-room`, `#store-family`, `#restaurant`입니다.
 
+## 내 상세페이지를 메인에 연결하기 (섹션 담당이 직접)
+
+페이지를 만든 PR에서 **연결까지 같이** 해야 머지하자마자 메인에서 열립니다. 연결을 빼먹으면 페이지는 있어도 메인에서 안 열립니다.
+
+1. 페이지를 `src/sections/<내 폴더>/<이름>.html`로 만들고, 메인으로 돌아가는 링크(`../../../index.html`)를 넣습니다.
+2. `src/core/atlas/app.js` 맨 위 `rooms`에서 **내 방 항목에만** `page:'경로'`를 추가합니다. 이 한 줄 외에는 고치지 않습니다.
+
+   ```js
+   {id:'restaurant',name:'Restaurant',ko:'키친 & 다이닝',page:'./src/sections/food/restaurant.html', ...
+   ```
+3. 로컬 서버에서 메인 → 내 방 입장 → 예전 상세 화면 없이 바로 내 페이지가 열리는지, 뒤로 가기가 되는지 확인합니다.
+
+| 방 id | 연결된 페이지 |
+| --- | --- |
+| `about` | (아직 없음) |
+| `ikea-ps` | `./src/sections/collection/collection.html` |
+| `3d-room` | (아직 없음) |
+| `store-family` | (아직 없음) |
+| `restaurant` | `./src/sections/food/restaurant.html` |
+
+AI에게는 이렇게 말하면 됩니다: **"나는 ○○ 담당이야. 내 상세페이지 만들고 메인 ○○ 방에 연결까지 해서 PR 올려줘."**
+
 ## 팀 섹션 개발
 
 기존 `src/sections/` 작업은 로컬 서버의 `sections.html`에서 실행합니다. 팀에서 사용하던 `/?section=rooms&debug` 등의 주소도 이 개발 화면으로 연결됩니다. 메인의 상세페이지 콘텐츠는 현재 Room Atlas 데모 버전입니다.
@@ -192,7 +214,7 @@ git push -u origin rooms/camera-path  # 3. 브랜치 올리기
 
 - **`main`에 직접 푸시하지 않기.**
 - **PR은 작게, 자주.** 며칠치를 한 번에 올리면 확인이 어렵고 충돌이 커집니다.
-- **공통 파일(`src/core/`, `src/styles/`, `src/main.js`, `index.html`)은 공통 담당자만 수정.** 필요하면 담당자에게 요청하거나 그 수정만 따로 PR로 올립니다.
+- **공통 파일(`src/core/`, `src/styles/`, `src/main.js`, `index.html`)은 공통 담당자만 수정.** 필요하면 담당자에게 요청하거나 그 수정만 따로 PR로 올립니다. 단, `app.js`의 `rooms`에서 **내 방의 `page` 한 줄**은 섹션 담당이 직접 추가합니다(위 "내 상세페이지를 메인에 연결하기").
 - **머지 전에 실행 확인.** `?section=자기섹션`으로 자기 섹션을, 주소 그대로 열어 전체 흐름을 한 번씩 확인합니다.
 - **GLB는 파일당 100MB 이하.** GitHub은 100MB가 넘는 파일을 거부합니다(50MB부터 경고). Blender 원본(`.blend`)은 저장소에 올리지 말고 드라이브 등으로 공유합니다.
 - 충돌이 나면 혼자 덮어쓰지 말고 해당 파일 담당자와 같이 해결합니다.
