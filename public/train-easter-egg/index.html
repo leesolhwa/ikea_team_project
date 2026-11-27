@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IKEA’s History</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="css/history.css?v=12">
+</head>
+<body>
+
+<!-- 3D 룸 자리 (단독 실행용 자리표시. 실제 프로젝트에서는 3D 룸이 이 뒤에 있음) -->
+<div id="room">
+  <p>3D 룸 자리</p>
+  <button id="trainObject" type="button">기차 오브젝트 클릭</button>
+</div>
+
+<!-- 역사 애니메이션: 아래에서 위로 올라와 3D 룸을 덮음 -->
+<section id="history" aria-label="IKEA의 역사" hidden>
+  <div id="stage">
+    <svg id="scene" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- 손그림 떨림: 아주 약한 변위를 시드만 바꿔 초당 7번 교체 -->
+        <filter id="boil" x="-5%" y="-10%" width="110%" height="120%">
+          <feTurbulence id="boilNoise" type="fractalNoise" baseFrequency="0.035" numOctaves="1" seed="2"/>
+          <feDisplacementMap in="SourceGraphic" scale="1.6"/>
+        </filter>
+        <!-- 기관실 안쪽만 보이게 (조케 하반신은 기관차 몸통 뒤로) -->
+        <clipPath id="cabClip" clipPathUnits="userSpaceOnUse">
+          <rect x="318" y="-20" width="49" height="86"/>
+        </clipPath>
+      </defs>
+
+      <!-- 지평선 -->
+      <path id="ground" d="M0 842 L1920 842" fill="none" stroke="var(--ground)" stroke-width="1.6"/>
+
+      <!-- 장면 오브젝트 (시안 좌표 그대로, data/scenes.js에서 채움) -->
+      <g id="scenes"></g>
+
+      <!-- 걸어와서 기차에 타는 조케: 기차보다 뒤 레이어 → 기관차 뒤로 돌아 들어가면 가려짐 -->
+      <g id="walker" transform="translate(760 842)">
+        <g id="walkerFlip"><g id="walkerPoses"></g></g>
+      </g>
+
+      <!-- 기차 (로컬 좌표: 시안 5번 기준 translate 660,700) -->
+      <g id="trainCam"><!-- 줌아웃용: 기차 전체를 지평선 기준으로 확대·축소 --><g transform="translate(660 700)" filter="url(#boil)"><g id="train">
+        <!-- 연기 -->
+        <g id="smoke"></g>
+
+        <!-- 객차 1 -->
+        <g class="car" id="car1">
+          <path class="paper" d="M14 30 L152 30 L154 136 L13 137 Z"/>
+          <path class="ink draw" d="M14 33 C13 30 15 29 21 29 L148 30 C153 30 155 33 154 38 C154 44 152 47 147 47 L22 48 C15 48 12 46 12 41 C12 37 13 35 15 34"/>
+          <path class="ink draw" d="M18 47 C60 49 110 46 146 50"/>
+          <path class="ink draw" d="M18 49 L18 84 C18 87 20 88 24 88 L144 87 C147 87 147 85 147 80 L146 52"/>
+          <path class="ink draw" d="M84 85 C80 72 81 60 85 58 C89 58 90 72 87 85"/>
+          <path class="ink draw" d="M142 61 C140 70 141 80 144 88"/>
+          <path class="ink draw" d="M26 88 C15 89 12 92 12 100 L13 131 C13 136 16 138 22 137 L148 136 C153 136 154 133 154 128 L153 97 C153 92 150 90 145 90"/>
+          <path class="ink draw" d="M20 97 C60 95 110 96 147 99"/>
+          <path class="ink draw" d="M148 98 C149 108 149 116 148 124"/>
+          <path class="ink draw" d="M14 128 C50 131 100 127 152 130"/>
+          <path class="ink draw" d="M154 126 L168 126"/>
+          <g class="wheel" data-cx="57" data-cy="123" data-r="18">
+            <circle class="paper" cx="57" cy="123" r="18"/>
+            <path class="ink draw" d="M39 123 C39 112 47 105 57 105 C67 105 75 113 75 123 C75 133 67 141 57 141 C47 141 39 133 39 123"/>
+            <path class="ink draw" d="M41 129 C44 121 52 121 51 127 C50 132 42 132 43 124"/>
+          </g>
+          <g class="wheel" data-cx="123" data-cy="124" data-r="16">
+            <circle class="paper" cx="123" cy="124" r="16"/>
+            <path class="ink draw" d="M107 124 C107 115 114 108 123 108 C132 108 139 115 139 124 C139 133 132 140 123 140 C114 140 107 133 107 124"/>
+            <path class="ink draw" d="M109 129 C112 121 120 121 119 127 C118 132 110 132 111 124"/>
+          </g>
+        </g>
+
+        <!-- 객차 2 -->
+        <g class="car" id="car2">
+          <path class="paper" d="M166 32 L300 32 L302 138 L167 138 Z"/>
+          <path class="ink draw" d="M166 35 C165 32 167 31 172 31 L295 32 C299 32 300 35 300 40 C300 46 298 49 293 49 L173 50 C167 50 164 48 164 43 C164 39 165 37 167 36"/>
+          <path class="ink draw" d="M170 50 C210 52 260 49 296 52"/>
+          <path class="ink draw" d="M171 52 L170 86 C170 89 172 90 176 90 L292 89 C295 89 296 87 296 82 L295 54"/>
+          <path class="ink draw" d="M181 88 C177 76 178 62 182 60 C186 60 186 74 184 88"/>
+          <path class="ink draw" d="M232 60 C230 70 231 80 236 88"/>
+          <path class="ink draw" d="M176 90 C168 91 166 94 167 102 L167 133 C167 138 170 139 176 139 L297 138 C301 138 302 135 302 130 L301 99 C301 94 299 92 294 92"/>
+          <path class="ink draw" d="M171 99 C210 97 260 98 299 101"/>
+          <path class="ink draw" d="M296 100 C297 110 297 118 296 126"/>
+          <path class="ink draw" d="M168 128 C205 131 255 127 300 130"/>
+          <path class="ink draw" d="M302 127 L314 127"/>
+          <g class="wheel" data-cx="210" data-cy="123" data-r="18">
+            <circle class="paper" cx="210" cy="123" r="18"/>
+            <path class="ink draw" d="M192 123 C192 112 200 105 210 105 C220 105 228 113 228 123 C228 133 220 141 210 141 C200 141 192 133 192 123"/>
+            <path class="ink draw" d="M194 128 C197 120 205 120 204 126 C203 131 195 131 196 123"/>
+          </g>
+          <g class="wheel" data-cx="267" data-cy="123" data-r="17">
+            <circle class="paper" cx="267" cy="123" r="17"/>
+            <path class="ink draw" d="M250 123 C250 114 257 106 267 106 C277 106 284 114 284 123 C284 132 277 140 267 140 C257 140 250 132 250 123"/>
+            <path class="ink draw" d="M252 128 C255 120 263 120 262 126 C261 131 253 131 254 123"/>
+          </g>
+        </g>
+
+        <!-- 기관차 -->
+        <g class="car" id="loco">
+          <path class="paper" d="M313 22 L406 22 L406 35 L398 36 L398 66 L416 66 L416 8 L445 8 L444 66 L457 66 L457 74 L468 74 L491 74 L492 124 L468 124 L466 128 L325 130 L325 136 L309 136 L309 110 L320 110 L320 66 L313 36 Z"/>
+          <!-- 조케 (탑승) : 배경색으로 채워 선이 겹쳐도 보이게 -->
+          <path class="ink draw" d="M315 24 C313 22 315 21 321 21 L402 22 C406 22 407 25 407 29 C407 33 405 35 401 35 L318 35 C313 35 312 33 312 30 C312 27 313 25 316 24"/>
+          <path class="ink draw" d="M321 38 C319 46 319 57 322 64 C324 57 324 46 321 38"/>
+          <path class="ink draw" d="M367 37 L396 36 C398 36 398 38 398 42 L397 66 L368 66 C366 60 366 46 367 37"/>
+          <!-- 조케 (탑승): 시안처럼 지붕 앞, 몸통 아래쪽은 기관차 몸통에 가려짐 -->
+          <g id="riderClip" clip-path="url(#cabClip)"><g id="riderPop"><g id="rider"></g></g></g>
+          <path class="ink draw" d="M417 10 C415 8 417 7 421 7 L442 8 C445 8 445 10 445 13 L444 18 L417 19 C415 19 415 17 415 14 C415 12 416 11 418 10"/>
+          <path class="ink draw" d="M418 19 L418 64"/>
+          <path class="ink draw" d="M441 19 C441 35 442 50 442 66"/>
+          <path class="ink draw" d="M428 66 C434 66 440 66 447 67"/>
+          <path class="ink draw" d="M321 110 L320 70 C320 67 322 66 325 66 L454 66 C457 66 457 68 457 72 L456 76 L400 76"/>
+          <path class="ink draw" d="M324 72 C360 71 400 72 455 74"/>
+          <path class="ink draw" d="M396 74 C395 84 396 92 397 101"/>
+          <path class="ink draw" d="M411 102 L411 83 L426 83 L426 94 L430 94 L430 87 L438 87 L438 94 L442 94 L442 87 L450 87 L450 101 C437 101 424 102 411 102"/>
+          <path class="ink draw" d="M456 76 L468 76 M445 86 L469 88 M450 101 L470 102"/>
+          <path class="ink draw" d="M469 74 C476 72 488 72 490 76 C493 90 493 110 490 122 C485 125 474 125 470 122 C466 110 466 90 469 74"/>
+          <path class="ink draw" d="M473 80 C472 94 472 108 474 120"/>
+          <path class="ink draw" d="M313 109 L322 109 C324 109 325 111 325 114 L324 132 C324 134 322 135 319 135 L312 135 C310 135 309 133 309 130 L309 113 C309 111 310 109 313 109"/>
+          <path class="ink draw" d="M325 128 C350 129 420 130 468 125"/>
+          <g class="wheel" data-cx="355" data-cy="120" data-r="20">
+            <circle class="paper" cx="355" cy="120" r="20"/>
+            <path class="ink draw" d="M335 120 C335 108 344 100 355 100 C366 100 375 108 375 120 C375 132 366 140 355 140 C344 140 335 132 335 120"/>
+            <path class="ink draw" d="M338 126 C341 118 349 118 348 124 C347 129 339 129 340 121"/>
+          </g>
+          <g class="wheel" data-cx="402" data-cy="124" data-r="14">
+            <circle class="paper" cx="402" cy="124" r="14"/>
+            <path class="ink draw" d="M388 124 C388 116 394 110 402 110 C410 110 416 116 416 124 C416 132 410 138 402 138 C394 138 388 132 388 124"/>
+            <path class="ink draw" d="M379 132 C380 125 386 125 389 129"/>
+          </g>
+          <g class="wheel" data-cx="440" data-cy="126" data-r="14">
+            <circle class="paper" cx="440" cy="126" r="14"/>
+            <path class="ink draw" d="M426 126 C426 118 432 112 440 112 C448 112 454 118 454 126 C454 134 448 140 440 140 C432 140 426 134 426 126"/>
+            <path class="ink draw" d="M430 131 C433 124 441 124 440 130 C439 135 431 135 432 128"/>
+          </g>
+        </g>
+      </g></g></g>
+    </svg>
+
+    <div id="year" aria-hidden="true"><span></span></div>
+    <div id="title">IKEA’S HISTORY</div>
+    <div class="lb top"></div>
+    <div class="lb bottom"></div>
+    <p id="subtitle" aria-live="polite"></p>
+    <p id="footnote"></p>
+    <button id="speed" type="button" aria-label="재생 속도 1배">1x</button>
+    <button id="close" type="button" aria-label="닫기"><svg viewBox="0 0 48 48"><path d="M14 14 L34 34 M34 14 L14 34"/></svg></button>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/DrawSVGPlugin.min.js"></script>
+<script src="data/scenes.js?v=12"></script>
+<script src="js/joke.js?v=12"></script>
+<script src="js/history.js?v=12"></script>
+</body>
+</html>

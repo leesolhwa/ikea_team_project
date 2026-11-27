@@ -1,0 +1,60 @@
+:root{
+  --bg:#F6F2E9;      /* 배경 아이보리 */
+  --box:#1A1A1A;     /* 레터박스 */
+  --sub:#FAD917;     /* 자막 */
+  --title:#000C44;   /* 타이틀·연도 */
+  --joke:#0C3494;    /* 조케 */
+  --ink:#2F2F2F;     /* 일러스트 선 */
+  --ground:#000C44;  /* 지평선 */
+  --sub-skew:-10deg; /* 자막 기울기 (Pretendard는 이탤릭이 없어 글자를 직접 기울임). 0deg = 똑바로 */
+}
+html,body{margin:0;height:100%}
+body{background:#3a3a3a;font-family:'Pretendard',sans-serif;overflow:hidden}
+
+/* 3D 룸 자리표시 (단독 실행용) */
+#room{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:#ddd;background:#3a3a3a}
+#room p{margin:0;font-size:14px;opacity:.7}
+#room button{font:inherit;font-size:16px;padding:14px 22px;border-radius:999px;border:1px solid #888;background:#222;color:#fff;cursor:pointer}
+
+/* 역사 화면: 화면 전체를 덮고, 1920x1080 무대를 비율대로 맞춤 */
+#history{position:fixed;inset:0;background:var(--box);z-index:10;overflow:hidden}
+#history[hidden]{display:none}
+#stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:0 0;background:var(--bg);overflow:hidden}
+#scene{position:absolute;inset:0;width:1920px;height:1080px;display:block}
+
+.ink{fill:none;stroke:var(--ink);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.sl{fill:none;stroke:var(--ink);stroke-width:var(--sw,1.5);stroke-linecap:round;stroke-linejoin:round}   /* 장면 선 (굵기는 장면별 배율에 맞춰 history.js에서) */
+.paper{fill:var(--bg);stroke:none}
+.jk{fill:none;stroke:var(--joke);stroke-linecap:round;stroke-linejoin:round}
+
+/* 레터박스: 1080 기준 138px (무대와 함께 비율 조절) */
+.lb{position:absolute;left:0;width:1920px;height:138px;background:var(--box);z-index:5}
+.lb.top{top:0}
+.lb.bottom{bottom:0}
+
+#title{position:absolute;left:0;right:0;top:470px;margin:0;text-align:center;z-index:4;
+  font-family:'Alexandria',sans-serif;font-weight:400;font-size:64px;line-height:1.4;letter-spacing:-0.06em;color:var(--title);opacity:0}
+
+/* 연도: 장면이 바뀔 때 숫자가 굴러가듯 교체 */
+#year{position:absolute;left:120px;top:176px;width:240px;height:68px;overflow:hidden;z-index:4;
+  font-family:'Alexandria',sans-serif;font-weight:400;font-size:48px;line-height:68px;letter-spacing:-0.06em;color:var(--title)}
+#year span{position:absolute;left:0;top:0}
+
+#subtitle{position:absolute;left:0;right:0;bottom:0;height:138px;margin:0;padding:0 160px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;text-align:center;z-index:6;
+  font-family:'Pretendard',sans-serif;font-weight:400;font-size:var(--sub-size,24px);line-height:1.4;letter-spacing:-0.06em;color:var(--sub);opacity:0;word-break:keep-all}
+#footnote{position:absolute;right:96px;bottom:0;height:138px;margin:0;display:flex;align-items:center;z-index:6;
+  font-family:'Pretendard',sans-serif;font-weight:400;font-size:var(--foot-size,16px);line-height:1.4;letter-spacing:-0.06em;color:var(--sub);opacity:0}
+#subtitle,#footnote{transform:skewX(var(--sub-skew))}
+/* 각주는 자막이 커지는 작은 화면에서는 자막 위로 */
+@media (max-aspect-ratio: 1/1){ #footnote{right:0;left:0;justify-content:center;bottom:138px;height:auto;padding-bottom:12px} }
+
+/* 배속 버튼: 왼쪽 위 레터박스 (X와 대칭) */
+#speed{position:absolute;top:45px;left:56px;height:48px;min-width:76px;padding:0 16px;z-index:7;opacity:0;cursor:pointer;
+  border:1.5px solid rgba(246,242,233,.55);border-radius:999px;background:none;color:var(--bg);
+  font-family:'Alexandria',sans-serif;font-size:20px;letter-spacing:-0.02em;transition:border-color .2s,color .2s}
+#speed:hover,#speed:focus-visible{border-color:var(--sub);color:var(--sub)}
+#speed:focus-visible{outline:none}
+#close{position:absolute;top:45px;right:56px;width:48px;height:48px;z-index:7;border:0;background:none;cursor:pointer;padding:0;opacity:0}
+#close svg{width:100%;height:100%;fill:none;stroke:var(--bg);stroke-width:2;stroke-linecap:round;transition:transform .25s}
+#close:hover svg,#close:focus-visible svg{transform:rotate(90deg)}
+#close:focus-visible{outline:2px solid var(--sub);outline-offset:4px;border-radius:4px}
