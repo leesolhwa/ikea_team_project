@@ -5,6 +5,11 @@
 <meta name="theme-color" content="#030817"><title>IKEA</title>
 <link rel="icon" href="./assets/images/common/favicon.ico?v=2" sizes="any"><link rel="icon" type="image/png" sizes="32x32" href="./assets/images/common/ikea-icon-32.png?v=2"><link rel="apple-touch-icon" href="./assets/images/common/ikea-icon-180.png?v=2">
 <script>
+  // 상세페이지에서 나와 돌아오는 중이면 첫 화면부터 아이보리로 덮어 둠 (app.js 가 원을 오므리며 걷어냄)
+  try { if (sessionStorage.getItem('atlas-return-wipe') === '1') document.documentElement.classList.add('atlas-returning'); } catch (e) {}
+</script>
+<style>html.atlas-returning #wipe{display:block}</style>
+<script>
   // 기존 팀원용 섹션 바로가기와 디버그 주소를 유지합니다.
   const params = new URLSearchParams(location.search);
   if (params.has('section') || params.has('debug')) {

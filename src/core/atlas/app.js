@@ -531,3 +531,22 @@ world.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&!e.repeat&&canEnterRoom())enter(e,index);
 });
 new ResizeObserver(schedule).observe(world);theme();syncDetail();if(index===0&&initialRoom!=='about'&&!dialog.open&&!reduced.matches)walkIn();
+// 상세페이지에서 나와 돌아왔을 때: 들어갈 때 원이 커지던 것의 반대로, 아이보리 원이 방 문 쪽으로 오므라들며 방이 보입니다.
+// (상세페이지가 sessionStorage 'atlas-return-wipe' 를 남기면 동작. 원 색은 테마와 상관없이 --paper)
+(function returnWipe(){
+  const on=document.documentElement.classList.contains('atlas-returning');
+  try{sessionStorage.removeItem('atlas-return-wipe')}catch{}
+  if(!on)return;
+  const done=()=>{document.documentElement.classList.remove('atlas-returning');wipe.hidden=true};
+  if(reduced.matches||dialog.open){done();return}
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    const r=opening.getBoundingClientRect();
+    const x=r.width?r.left+r.width/2:innerWidth/2,y=r.height?r.top+r.height/2:innerHeight/2;
+    const radius=Math.ceil(Math.hypot(Math.max(x,innerWidth-x),Math.max(y,innerHeight-y)))+2;
+    const circle=v=>'circle('+v+'px at '+x+'px '+y+'px)';
+    wipe.hidden=false;document.documentElement.classList.remove('atlas-returning');
+    const motion=wipe.animate([{clipPath:circle(radius),offset:0},{clipPath:circle(radius),offset:.12},{clipPath:circle(0),offset:1}],
+      {duration:1100,easing:'cubic-bezier(.72,0,.5,1)',fill:'both'});
+    motion.onfinish=()=>{motion.cancel();wipe.hidden=true};
+  }));
+})();
