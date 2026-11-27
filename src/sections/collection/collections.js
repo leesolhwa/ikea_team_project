@@ -8,6 +8,7 @@ const badge=find(overlay,'top_right');function move(){const sx=innerWidth/1920,s
   const fontScale = Math.min(sx, sy);
   stage.style.setProperty("--photo-scale-x", fontScale / sx);
   stage.style.setProperty("--photo-scale-y", fontScale / sy);
+  stage.style.setProperty("--detail-width", width() + "px");
   document.documentElement.style.setProperty("--text-scale-x", fontScale / sx);
   document.documentElement.style.setProperty("--text-scale-y", fontScale / sy);
   stage.style.width=(detail?width():1920)+'px';stage.style.height=overlay.style.height=(detail?1080:990)+'px';stage.style.transform='scale('+sx+','+sy+') translateX('+(-pos)+'px)';overlay.style.transform='scale('+sx+','+sy+')';gridLayer.style.transform=overlay.style.transform;
@@ -18,46 +19,67 @@ const badge=find(overlay,'top_right');function move(){const sx=innerWidth/1920,s
   nav.style.transform = "scaleY(" + parentScaleY / sy + ")";
   nav.style.setProperty("--text-scale-x", navFontScale / sx);
   nav.style.setProperty("--text-scale-y", navFontScale / parentScaleY);
-  let covered=detail?Math.max(0,pos+1920-(width()-617)):0;document.body.classList.toggle('ending',covered>0);overlay.style.setProperty('--covered',covered+'px');badge.style.visibility=detail&&pos>500?'hidden':'visible'}const entrySpeed = 0.6;
-let detailEffects = [];
-let leavingDetail = false;
+  let covered=detail?Math.max(0,pos+1920-(width()-617)):0;document.body.classList.toggle('ending',covered>0);overlay.style.setProperty('--covered',covered+'px');badge.style.visibility=detail?'hidden':'visible'}const entrySpeed = 0.6;
 function enterEffect(el, keyframes, duration, easing) {
-  if (!el || reduced) return;
-  const effect = el.animate(keyframes, {duration: duration / entrySpeed, easing, fill: detail ? "both" : "none"});
-  if (detail) detailEffects.push(effect);
+  if (!el || reduced || detail) return;
+  el.animate(keyframes, {duration: duration / entrySpeed, easing, fill: "none"});
 }
 function animate(el, from) {
   enterEffect(el, [{transform: from}, {transform: "none"}], 650, "cubic-bezier(.2,.8,.2,1)");
 }
-async function leaveDetail(n) {
-  if (leavingDetail) return;
-  leavingDetail = true;
-  cancelAnimationFrame(raf);
-  previousTick = 0;
-  if (pos && !reduced) {
-    const start = pos, time = performance.now();
-    await new Promise(resolve => {
-      function rewind(now) {
-        const t = Math.min(1, (now - time) / 520);
-        pos = start * (1 - t * t * (3 - 2 * t));
-        move();
-        if (t < 1) requestAnimationFrame(rewind); else resolve();
-      }
-      requestAnimationFrame(rewind);
-    });
-  }
-  for (const effect of detailEffects) effect.reverse();
-  await Promise.allSettled(detailEffects.map(effect => effect.finished));
-  for (const effect of detailEffects) effect.cancel();
-  detailEffects = [];
-  leavingDetail = false;
-  displayFrame(n, false);
+let transitioning = false;
+async function openDetail(n) {
+  if (reduced) { displayFrame(n, true, true); return; }
+  transitioning = true;
+  stopOpeningCards();
+  const masks = [...frames[current].querySelectorAll('.photo-mask')];
+  const collapsedClips = {
+    left: 'polygon(576px 151.55px, 576px 75.20px, 576px 453.84px, 576px 530.19px)',
+    right: 'polygon(576px 75.20px, 576px 151.55px, 576px 530.19px, 576px 453.84px)',
+    center: 'polygon(576px 2.02px, 576px 2.02px, 576px 538.38px, 576px 538.38px)'
+  };
+  const animations = masks.map(mask => mask.animate([
+    { clipPath: getComputedStyle(mask).clipPath },
+    { clipPath: collapsedClips[mask.dataset.card] }
+  ], { duration: 750, easing: 'cubic-bezier(.65,0,.35,1)', fill: 'forwards' }));
+  const line = document.createElement('div');
+  line.className = 'photo-transition-line';
+  document.getElementById('viewport').append(line);
+  await Promise.all(animations.map(animation => animation.finished));
+  line.style.opacity = '1';
+  masks.forEach(mask => { mask.style.visibility = 'hidden'; });
+  const stretch = line.animate([{height: '55vh'}, {height: '100vh'}],
+    {duration: 600, easing: 'cubic-bezier(.65,0,.35,1)', fill: 'forwards'});
+  await stretch.finished;
+  const scale = Math.min(innerWidth / 1920, innerHeight / 1080);
+  const imageWidth = 960 * scale, imageHeight = 1080 * scale;
+  const topX = imageWidth * .4, bottomX = imageWidth;
+  const targetX = (topX + bottomX) / 2;
+  const targetLength = Math.hypot(bottomX - topX, imageHeight);
+  const angle = -180 - Math.atan2(bottomX - topX, imageHeight) * 180 / Math.PI;
+  const slide = line.animate([
+    {left: '50%'}, {left: targetX + 'px'}
+  ], {duration: 700, easing: 'cubic-bezier(.65,0,.35,1)', fill: 'forwards'});
+  await slide.finished;
+  const spin = line.animate([
+    {height: '100vh', transform: 'translate(-50%,-50%) rotate(0deg)'},
+    {height: targetLength + 'px', transform: `translate(-50%,-50%) rotate(${angle}deg)`}
+  ], {duration: 1000, easing: 'cubic-bezier(.65,0,.35,1)', fill: 'forwards'});
+  await spin.finished;
+  displayFrame(n, true, true);
+  await line.animate([{opacity: 1}, {opacity: 0}], {duration: 250, fill: 'forwards'}).finished;
+  line.remove();
+  animations.forEach(animation => animation.cancel());
+  masks.forEach(mask => { mask.style.visibility = ''; });
+  transitioning = false;
 }
 function show(n, d) {
-  if (leavingDetail) return;
-  if (detail && !d) { void leaveDetail(n); return; }
+  if (transitioning) return;
   if (detail && d && n === current) return;
-  displayFrame(n, d);
+  const changingMode = detail !== d;
+  if (changingMode) hidePhotoCursor();
+  if (!detail && d) { void openDetail(n); return; }
+  displayFrame(n, d, changingMode);
 }let scrollTarget = 0, previousTick = 0, wheelDistance = 0;
 function displayFrame(n,d,opening=false){stopOpeningCards();scrollTarget = 0; previousTick = 0; wheelDistance = 0;const previousFrame = detail ? null : frames[current];cancelAnimationFrame(raf);current=(n+5)%5;detail=d;pos=0;gate=false;frames.forEach((f,i)=>f.hidden=i!==current+(d?5:0));let f=frames[current+(d?5:0)];const titleRow = !d && find(f, "name");
   if (titleRow) {
@@ -111,7 +133,7 @@ function displayFrame(n,d,opening=false){stopOpeningCards();scrollTarget = 0; pr
           { transform: "translate(0,0)" }
         ], { duration: 650 / entrySpeed, easing: "cubic-bezier(.2,.8,.2,1)" });
         entry.onfinish = entry.oncancel = () => behind.remove();
-      }}let thumb=find(f,'thumbnail');if(thumb && !reduced){thumb.classList.add('detail-wipe');enterEffect(thumb,[{'--angle':'0deg'},{'--angle':'360deg'}],850,'ease');}if(thumb)thumb.style.zIndex=2;animate(find(f,'title'),'translateX(-420px)');move()}for(const f of frames){for(const n of ['top_right','top-right']){let el=find(f,n);if(el)el.hidden=true;if(el)el.style.display='none'}let center=find(f,'center');if(center){let target=center.lastElementChild;target.setAttribute('role','button');target.tabIndex=0;target.setAttribute('aria-label','컬렉션 자세히 보기');target.onclick=()=>show(current,true)}let go=find(f,'go');if(go){go.setAttribute('role','button');go.tabIndex=0;go.onclick=()=>window.open('https://www.ikea.com/kr/ko/','_blank','noopener')}}function easeScroll(time) {
+      }}let thumb=find(f,'thumbnail');if(thumb)thumb.style.zIndex=2;animate(find(f,'title'),'translateX(-420px)');move()}for(const f of frames){for(const n of ['top_right']){let el=find(f,n);if(el)el.hidden=true;if(el)el.style.display='none'}let center=find(f,'center');if(center){let target=center.lastElementChild;target.setAttribute('role','button');target.tabIndex=0;target.setAttribute('aria-label','컬렉션 자세히 보기');target.onclick=()=>show(current,true)}let go=find(f,'go');if(go){go.setAttribute('role','button');go.tabIndex=0;go.onclick=()=>window.open('https://www.ikea.com/kr/ko/','_blank','noopener')}}function easeScroll(time) {
   const elapsed = previousTick ? Math.min(time - previousTick, 64) : 16;
   previousTick = time;
   pos += (scrollTarget - pos) * (1 - Math.exp(-elapsed / 95));
@@ -124,7 +146,7 @@ function displayFrame(n,d,opening=false){stopOpeningCards();scrollTarget = 0; pr
   if (previousTick) raf = requestAnimationFrame(easeScroll);
 }
 function step(delta, fresh) {
-  if (!delta || leavingDetail) return;
+  if (!delta || transitioning) return;
   if (!detail) {
     if (fresh || Math.sign(delta) !== Math.sign(wheelDistance)) wheelDistance = 0;
     wheelDistance += delta;
@@ -196,7 +218,6 @@ function playOpeningCards() {
       if (clip.parentNode === group) clip.replaceWith(...copy.children);
     });
   }
-  // Both rules belong to the original SVG. Keep its lower edge stationary.
   const rules = find(overlay, "line").querySelector("img");
   const risingRule = document.createElement("i");
   risingRule.className = "opening-rising-rule";
@@ -241,7 +262,14 @@ function playOpeningCards() {
 }
 onresize = move;
 displayFrame(0, false, true);
-playOpeningCards();
+async function startOpening() {
+  await document.fonts.ready;
+  move();
+  await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  playOpeningCards();
+  document.documentElement.classList.remove('opening-pending');
+}
+void startOpening();
 
 // 나가기 아이콘: 상세 전시에서는 컬렉션 목록으로, 목록에서는 메인으로 돌아갑니다.
 const exitIcons = '[data-name="iconamoon:exit-thin"]';
@@ -263,7 +291,7 @@ addEventListener("click", e => {
 }, true);
 const photoCursor = document.getElementById("photo-cursor");
 function hidePhotoCursor() {
-  photoCursor.hidden = true;
+  photoCursor.classList.remove("is-visible");
   document.body.classList.remove("photo-hover");
 }
 function updatePhotoCursor(event) {
@@ -273,7 +301,7 @@ function updatePhotoCursor(event) {
   }
   photoCursor.style.left = event.clientX + "px";
   photoCursor.style.top = event.clientY + "px";
-  photoCursor.hidden = false;
+  photoCursor.classList.add("is-visible");
   document.body.classList.add("photo-hover");
 }
 document.addEventListener("pointermove", updatePhotoCursor);
