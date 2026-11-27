@@ -53,11 +53,17 @@ requestAnimationFrame(loop);
 // 나가기: 맨 끝에서 더 내리면 메인의 Store & Family 방으로.
 // 메인이 원을 작게 오므리며 방을 보여 주도록 표시를 남김 (들어올 때 원이 커지던 것의 반대 · 아이보리 원이라 다크/라이트 모드와 무관)
 let leaving = false;
-scroll.on('overscroll', ({ dir, ratio }) => {
-  if (leaving || section.cityOn || dir <= 0 || ratio < 1) return;
+function leaveToRoom() {
+  if (leaving) return;
   leaving = true;
   scroll.lock('stores-exit');
   try { sessionStorage.setItem('atlas-return-wipe', '1'); } catch { /* 저장 못 해도 이동은 함 */ }
   exit();
+}
+// 나가는 두 길 모두 같은 전환: ① 위 메뉴 줄의 ↤ 버튼 ② 맨 끝에서 더 내리기
+root.querySelector('.sf-page-exit').addEventListener('click', (e) => { e.preventDefault(); leaveToRoom(); });
+scroll.on('overscroll', ({ dir, ratio }) => {
+  if (section.cityOn || dir <= 0 || ratio < 1) return;
+  leaveToRoom();
 });
 addEventListener('pageshow', (e) => { if (e.persisted) { leaving = false; scroll.unlock('stores-exit'); } }); // 뒤로 가기로 돌아온 경우
