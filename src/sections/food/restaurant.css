@@ -102,7 +102,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .receipt { width: 365.3px; height: 614.6px; }
 .receipt img { width: 100%; height: 100%; }
 /* 영수증 3D: Three.js 캔버스를 종이보다 넉넉하게 깔아 휘고 말린 부분이 잘리지 않게 한다 */
-.receipt canvas { position: absolute; left: -110px; top: -90px; width: 585.3px; height: 834.6px; pointer-events: none; }
+.receipt canvas { position: absolute; pointer-events: none; } /* 위치·크기는 스크립트가 여백에 맞춰 정한다 */
 .receipt.is-3d > img { visibility: hidden; }
 .stage .receipt { position: absolute; left: 0; top: 0; visibility: hidden; }
 
