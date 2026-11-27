@@ -532,7 +532,7 @@ world.addEventListener('keydown',e=>{
 });
 new ResizeObserver(schedule).observe(world);theme();syncDetail();if(index===0&&initialRoom!=='about'&&!dialog.open&&!reduced.matches)walkIn();
 // 상세페이지에서 나와 돌아왔을 때: 들어갈 때 원이 커지던 것의 반대로, 아이보리 원이 방 문 쪽으로 오므라들며 방이 보입니다.
-// (상세페이지가 나갈 때 주소에 ?from=page 를 붙이면 동작. 원 색은 테마와 상관없이 --paper)
+// (index.html 이 상세페이지에서 돌아온 것을 알아채면 동작. 원 색은 테마와 상관없이 --paper)
 (function returnWipe(){
   const on=document.documentElement.classList.contains('atlas-returning');
   if(!on)return;
