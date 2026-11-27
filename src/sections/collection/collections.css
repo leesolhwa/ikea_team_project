@@ -118,7 +118,7 @@
 .v116{translate:var(--x) var(--y);position:absolute;bottom:35.98px;font-family:Alexandria,Pretendard,Arial,sans-serif;font-weight:400;line-height:1.1;left:957.81px;color:#000c44;font-size:16px;text-align:left;letter-spacing:-0.8px;--y:100%;white-space:nowrap}
 .v117{background:#fcfaf6;position:relative;width:100%;height:100%}
 .v118{position:absolute;height:1080px;left:-2px;top:0;width:1922px}
-.v119{position:absolute;inset:23.43% 0 8.33% 0}
+.v119{position:absolute;inset:23.43% auto 8.33% 0;width:var(--detail-width, 7084px)}
 .v120{position:absolute;inset:-0.14% 0 0 0}
 .v121{position:absolute;inset:0 12.49% 0 44.59%}
 .v122{position:absolute;inset:0 49.95% 0 0.1%}
@@ -399,13 +399,18 @@
 }
 
 .cursor-filter { position: fixed; pointer-events: none; }
+#viewport { background: #fcfaf6; }
+html.opening-pending #viewport { opacity: 0; }
+.photo-transition-line { position: fixed; left: 50%; top: 50%; width: 2px; height: 55vh; background: #000c44; transform: translate(-50%,-50%); opacity: 0; z-index: 20; pointer-events: none; }
 #photo-cursor {
   position: fixed; z-index: 10; pointer-events: none;
   width: min(5.20833vw,10.101vh); aspect-ratio: 1; border-radius: 50%;
-  transform: translate(-50%,-50%);
+  transform: translate(-50%,-50%) scale(.8); opacity: 0;
+  transition: transform 200ms ease, opacity 200ms ease;
   background: url("../../../assets/images/collection/mouse-ellipse.svg") center/contain no-repeat;
   color: white; font: 800 min(.83333vw,1.61616vh)/1 Inter,Arial,sans-serif;
 }
+#photo-cursor.is-visible { transform: translate(-50%,-50%) scale(1); opacity: 1; }
 #photo-cursor::before {
   content: ""; position: absolute; inset: 0; border-radius: inherit;
   backdrop-filter: url(#cursor-color-match);
