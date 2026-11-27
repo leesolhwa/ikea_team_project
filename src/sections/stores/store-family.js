@@ -50,36 +50,14 @@ const loop = (now) => {
 };
 requestAnimationFrame(loop);
 
-// 나가기 전환: 맨 끝에서 더 내리면 페이지가 원으로 작아지며 메인의 Store & Family 방으로 나감
-// (메인에서 들어올 때 원이 커지던 것의 반대). 더 내리는 만큼 원이 조금씩 줄어 미리 알려 주고, 멈추면 다시 펴짐
-const reduced = matchMedia('(prefers-reduced-motion: reduce)');
-const fullR = () => Math.ceil(Math.hypot(innerWidth / 2, innerHeight / 2)) + 2;
-const circle = (r) => `circle(${r.toFixed(1)}px at 50% 50%)`;
-const easeOut = (t) => 1 - (1 - t) ** 3;
-let leaving = false, nowR = 0;
-// 원 바깥은 메인 방 배경색 (메인 테마가 밝은 모드면 흰색)
-if (localStorage.getItem('room-atlas-theme') === 'light') document.documentElement.style.background = document.body.style.background = '#fff';
+// 나가기: 맨 끝에서 더 내리면 메인의 Store & Family 방으로.
+// 메인이 원을 작게 오므리며 방을 보여 주도록 표시를 남김 (들어올 때 원이 커지던 것의 반대 · 아이보리 원이라 다크/라이트 모드와 무관)
+let leaving = false;
 scroll.on('overscroll', ({ dir, ratio }) => {
-  if (leaving || section.cityOn) return;
-  if (dir > 0 && ratio >= 1) { leaveByCircle(); return; }
-  nowR = dir > 0 && ratio > 0 ? fullR() * (1 - 0.3 * easeOut(ratio)) : 0;
-  root.style.transition = 'clip-path .35s cubic-bezier(.3,0,.2,1)';
-  root.style.clipPath = nowR ? circle(nowR) : '';
-});
-function leaveByCircle() {
+  if (leaving || section.cityOn || dir <= 0 || ratio < 1) return;
   leaving = true;
   scroll.lock('stores-exit');
-  if (reduced.matches) { exit(); return; }
-  root.style.transition = '';
-  const anim = root.animate([{ clipPath: circle(nowR || fullR()) }, { clipPath: circle(4) }],
-    { duration: 1000, easing: 'cubic-bezier(.72,0,.5,1)', fill: 'forwards' });
-  anim.onfinish = exit;
-}
-// 뒤로 가기로 다시 이 페이지에 돌아왔을 때 원이 남아 있지 않게
-addEventListener('pageshow', (e) => {
-  if (!e.persisted) return;
-  leaving = false; nowR = 0;
-  root.getAnimations().forEach((a) => a.cancel());
-  root.style.clipPath = '';
-  scroll.unlock('stores-exit');
+  try { sessionStorage.setItem('atlas-return-wipe', '1'); } catch { /* 저장 못 해도 이동은 함 */ }
+  exit();
 });
+addEventListener('pageshow', (e) => { if (e.persisted) { leaving = false; scroll.unlock('stores-exit'); } }); // 뒤로 가기로 돌아온 경우
