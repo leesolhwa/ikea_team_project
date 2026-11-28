@@ -33,7 +33,7 @@ const SP={
   elevate:[.38,.62],                // camera angle rises to straight overhead
   spin:[.48,.74],                   // camera turns to the minimap orientation
   others:[.38,.52],                 // 3D layers and 1F fade while the camera rises
-  mm:[9,9],                     // the full minimap lands on the top view at 100%: walls, zone, route, points
+  mm:[.5,.62],                     // the full minimap lands on the top view at 100%: walls, zone, route, points
   shrink:[.64,.97],                   // (.78–.84 rests on the full minimap) then it shrinks away; the interior fades as it gets smaller
   bgFade:[.8,1]
 };
@@ -112,6 +112,9 @@ function mmRect(){   // the page's own minimap: the box of its walls on screen
   if(a>c){const r=m?m.getBoundingClientRect():{left:innerWidth-260,top:innerHeight-250,right:innerWidth-30,bottom:innerHeight-30};a=r.left;b=r.top;c=r.right;d=r.bottom}
   return[a*dpr,b*dpr,c*dpr,d*dpr]}
 function mmWallRect(){return mmRect()}
+let _pwp=0;function pageWallPx(){   // 페이지 미니맵 벽 선 두께(화면 px)
+  if(_pwp)return _pwp;const w=document.querySelector('#minimap .wall');if(!w)return 1.2;
+  const m=w.getScreenCTM(),sw=parseFloat(getComputedStyle(w).strokeWidth)||1;_pwp=Math.max(.6,sw*Math.hypot(m.a,m.b));return _pwp}
 
 function camera(p,o,V){   // one continuous move: frame the stack as it merges -> frame the top view as it rises and turns -> fly into the minimap
   const view=[0,0,VW,VH],pad=Math.min(VW,VH)*.07;
@@ -233,30 +236,31 @@ function makeZone(col){
   c.fillStyle='#000';c.fillRect(pad-10000+50,pad+50,w-100,h-100);
   return cvz;
 }
+let MINI_FA=1;   // 마지막에 페이지 미니맵과 같은 자리에서 교차 페이드
 function drawMini(c,R,wallA,marks,th,lw){ // R: minimap units -> screen, affine [a,b,c,d,e,f] (row-major)
   const M=S.mini,T=isDark()?DARK:LIGHT,col=k=>mix(DARK[k],T[k],th);
-  c.setTransform(R[0],R[3],R[1],R[4],R[2],R[5]);c.globalAlpha=1;
-  if(false){c.globalAlpha=marks*(1-th);c.drawImage(zoneImg.dark,M.zone[0]-160,M.zone[1]-160);
-    c.globalAlpha=marks*th;c.drawImage(isDark()?zoneImg.dark:zoneImg.light,M.zone[0]-160,M.zone[1]-160);c.globalAlpha=1}
-  c.globalAlpha=wallA;c.strokeStyle=marks>0?col('wall'):LOOK.line;c.lineWidth=lw;c.lineCap='square';
+  c.setTransform(R[0],R[3],R[1],R[4],R[2],R[5]);c.globalAlpha=MINI_FA*(1);
+  if(false){c.globalAlpha=MINI_FA*(marks*(1-th));c.drawImage(zoneImg.dark,M.zone[0]-160,M.zone[1]-160);
+    c.globalAlpha=MINI_FA*(marks*th);c.drawImage(isDark()?zoneImg.dark:zoneImg.light,M.zone[0]-160,M.zone[1]-160);c.globalAlpha=1}
+  c.globalAlpha=MINI_FA*wallA;c.strokeStyle=marks>0?col('wall'):LOOK.line;c.lineWidth=lw;c.lineCap='square';
   c.beginPath();
   for(const[x1,y1,x2,y2]of M.walls){c.moveTo(x1,y1);c.lineTo(x2,y2)}
   if(wallA>0)c.stroke();
-  c.globalAlpha=1;
+  c.globalAlpha=MINI_FA*(1);
   if(marks<=0)return;
   const rt=M.route;let tot=0;const segL=[];for(let i=1;i<rt.length;i++){const l=Math.hypot(rt[i][0]-rt[i-1][0],rt[i][1]-rt[i-1][1]);segL.push(l);tot+=l}
   let left=tot*eo(seg(marks,[0,.75]));
   c.strokeStyle=col('route');c.lineWidth=6;c.lineJoin='round';c.beginPath();c.moveTo(rt[0][0],rt[0][1]);
   for(let i=1;i<rt.length&&left>0;i++){const f=Math.min(1,left/segL[i-1]);c.lineTo(lerp(rt[i-1][0],rt[i][0],f),lerp(rt[i-1][1],rt[i][1],f));left-=segL[i-1]}
   c.stroke();
-  const e=M.end;c.globalAlpha=clamp(marks*3);c.fillStyle=col('bg');c.beginPath();c.arc(e[0],e[1],e[2],0,7);c.fill();c.stroke();c.globalAlpha=1;
+  const e=M.end;c.globalAlpha=MINI_FA*(clamp(marks*3));c.fillStyle=col('bg');c.beginPath();c.arc(e[0],e[1],e[2],0,7);c.fill();c.stroke();c.globalAlpha=MINI_FA*(1);
   M.points.forEach(([x,y,n],i)=>{const s=eo(seg(marks,[.25+i*.1,.55+i*.1]));if(s<=0)return;
     const big=n===1;c.fillStyle=big?col('act'):col('pt');
 
     c.beginPath();c.arc(x,y,(big?25:19)*s,0,7);c.fill();c.shadowBlur=0});
   c.fillStyle=col('label');c.font='44px system-ui,-apple-system,sans-serif';c.textAlign='center';c.textBaseline='alphabetic';
-  M.labels.forEach(([x,y,t],i)=>{const s=seg(marks,[.35+i*.1,.65+i*.1]);if(s<=0)return;c.globalAlpha=s;c.fillText(t,x,y+15)});
-  c.globalAlpha=1;
+  M.labels.forEach(([x,y,t],i)=>{const s=seg(marks,[.35+i*.1,.65+i*.1]);if(s<=0)return;c.globalAlpha=MINI_FA*(s);c.fillText(t,x,y+15)});
+  c.globalAlpha=MINI_FA*(1);
 }
 function buildMiniSVG(){
   const M=S.mini,z=M.zone;
@@ -315,6 +319,7 @@ function render(t,p){
   const cam=camera(p,o,V),C=cam.C,K0=cam.K0,Cm=mul(tr(0,offY),camM(C)),CV=mul(Cm,V),st=startTimes(K0);
   const fadeA=seg(p,SP.mergeA),oth=eio(seg(p,SP.others));
   const op={u3:1-oth,g3:1-oth,gp:LOOK.planA*(1-oth),up:lerp(LOOK.planA,1,oth)};
+  const mmIn=eio(seg(seg(p,SP.mm),[0,.8]));op.up*=1-mmIn;   // 깨끗한 미니맵 벽이 정확히 겹쳐 올라오는 동안 그려진 도면은 사라짐
   const ik=IKEA_COLORS?eio(seg(p,[SP.ikea[0],SP.ikea[1]]))*(1-eio(seg(p,[SP.ikea[2],SP.ikea[3]]))):0;
   ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,VW,VH);ctx.lineCap='round';ctx.lineJoin='round';
   const occ=eio(seg(p,[SP.mergeA[1]-.04,SP.mergeB[0]+.02]))*(1-oth);
@@ -326,7 +331,7 @@ function render(t,p){
     const D=eo((td-st[k])/DRAW.dur)*1.0001,A=mul(CV,layerW(k,o));
     if(k==='g3')paintFloor('g3',A,0,ik);
     if(k==='up')paintFloor('u3',mul(CV,layerW('u3',o)),occ,ik);
-    if(k==='up'&&p>SP.shrink[0]&&D>=1)drawUpTop(ctx,A,0,ess(seg(p,SP.shrink)),LOOK.topW);
+    if(k==='up'&&p>SP.shrink[0]&&D>=1){if(mmIn<1){ctx.save();ctx.globalAlpha=1-mmIn;drawUpTop(ctx,A,0,ess(seg(p,SP.shrink)),LOOK.topW);ctx.restore()}}
     else drawLayer(ctx,k,A,D,op[k],k==='up'?lerp(LOOK.planW,LOOK.topW,oth):k==='gp'?LOOK.planW:LOOK.solidW,tint[k]);
   }
   ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.lineCap='round';
@@ -373,9 +378,13 @@ function render(t,p){
     if(dk<=0)Rm=mul(mul(CV,layerW('up',o)),Q);
     else{const r=mmRect(),k=eio(seg(dk,[0,1])),L=(u,v,t)=>Math.exp(lerp(Math.log(u),Math.log(v),t));
       const R1=[(r[2]-r[0])/V0[0],0,r[0],0,(r[3]-r[1])/V0[1],r[1]],Rs=mul(Cm,mul(Cmf.length?inv(Cmf):Cmf,R0));
-      Rm=Rs}
+      // 끝 위치는 페이지 미니맵 벽과 정확히 같은 자리(벽 상자 → 화면 상자)로 맞춤
+      const bx=S.mini.box,sx=(r[2]-r[0])/(bx[2]-bx[0]),sy=(r[3]-r[1])/(bx[3]-bx[1]),R1e=[sx,0,r[0]-bx[0]*sx,0,sy,r[1]-bx[1]*sy],w=ess(dk);
+      Rm=Rs.map((v,i)=>lerp(v,R1e[i],w))}
     const sc=Math.sqrt(Math.abs(Rm[0]*Rm[4]-Rm[1]*Rm[3])),kk=eio(seg(dk,[.3,1]));
-    const lw=Math.exp(lerp(Math.log(LOOK.topW*dpr/sc),Math.log(7),kk));
+    const lw=Math.exp(lerp(Math.log(LOOK.topW*dpr/sc),Math.log(pageWallPx()*dpr/sc),kk));
+    MINI_FA=1-eio(seg(p,[.9,1]));
+    {const pm=document.getElementById('minimap');if(pm)pm.style.opacity=String(eio(seg(p,[.9,1])))}   // 페이지 미니맵은 캔버스 미니맵이 정확히 겹친 뒤에만 드러남
     drawMini(ctx,Rm,eio(seg(mmA,[0,.6])),seg(mmA,[.2,1]),eio(seg(dk,[.7,1])),lw);
     ctx.setTransform(1,0,0,1,0,0);
   }
@@ -428,6 +437,7 @@ function frame(){
 function finish(){
   done=true;cancelAnimationFrame(raf);
   mm.classList.add('on');site.classList.add('on');site.removeAttribute('aria-hidden');
+  {const pm=document.getElementById('minimap');if(pm)pm.style.opacity=''}
   splash.remove();skipBtn.remove();cue.remove();document.documentElement.classList.remove('splash-active');
   dispatchEvent(new CustomEvent('splash:done'));
 }
