@@ -1,5 +1,6 @@
 const $=s=>document.getElementById(s);
 var calm=false; // 진행자 키(M)로 이동 효과 끄기
+var waitingSplash=false; // 스플래시가 끝나길 기다리는 동안 섹션 제목을 숨김
 const rooms=[
   {id:'about',name:'About',ko:'거실',page:'./src/sections/about/about-ikea.html',text:'왼쪽 거실에서 탐색을 시작합니다. 소파와 낮은 테이블 너머로 안쪽 전시 공간이 이어집니다.',items:['소파와 플로어 램프가 놓인 휴식 공간','창가를 따라 이어지는 작은 좌석들']},
   {id:'ikea-ps',name:'IKEA PS',ko:'컬렉션 전시실',page:'./src/sections/collection/collection.html',text:'거실 뒤편의 전시실입니다. 선반 앞에는 휜 합판으로 좌석과 등받이를 연결한 의자가 놓여 있습니다.',items:['벽면을 따라 놓인 오픈 선반','낮은 전시대 위의 의자와 조명']},
@@ -299,7 +300,7 @@ function draw(){
   frame=0;if(dialog.open)return;
   const cam=tourView(performance.now());paintScene(cam);doors.style.visibility="hidden";
   if(approach||busy){guides.hidden=true;scene.removeAttribute('data-object-hover')}
-  caption.hidden=!!approach||index===rooms.length;const atExit=index===rooms.length&&!approach;
+  caption.hidden=!!approach||waitingSplash||index===rooms.length;const atExit=index===rooms.length&&!approach;
   const finishingWalk=index===rooms.length&&approach&&approach.start+approach.duration-performance.now()<=450;
   document.body.classList.toggle('at-exit',atExit);
   document.body.classList.toggle('show-footer',atExit||Boolean(finishingWalk));
@@ -557,7 +558,15 @@ world.addEventListener('click',e=>{
 world.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&!e.repeat&&canEnterRoom())enter(e,index);
 });
-new ResizeObserver(schedule).observe(world);theme();syncDetail();if(index===0&&initialRoom!=='about'&&!dialog.open&&!reduced.matches)walkIn();
+new ResizeObserver(schedule).observe(world);theme();syncDetail();if(index===0&&initialRoom!=='about'&&!dialog.open&&!reduced.matches){
+  // 스플래시가 재생 중이면 입구에 서 있다가, 스플래시가 미니맵으로 접히며 끝나는 순간 걸어 들어갑니다.
+  if(document.getElementById('fp-splash')){
+    travel=0;Object.assign(eye,entrance);waitingSplash=true;schedule();
+    let go=()=>{if(!waitingSplash)return;waitingSplash=false;walkIn();};
+    addEventListener('splash:reveal',go,{once:true});addEventListener('splash:done',go,{once:true});
+  }
+  else walkIn();
+}
 // 상세페이지에서 나와 돌아왔을 때: 들어갈 때 원이 커지던 것의 반대로, 아이보리 원이 방 문 쪽으로 오므라들며 방이 보입니다.
 // (index.html 이 상세페이지에서 돌아온 것을 알아채면 동작. 원 색은 테마와 상관없이 --paper)
 (function returnWipe(){

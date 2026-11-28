@@ -34,8 +34,8 @@ const SP={
   spin:[.48,.74],                   // camera turns to the minimap orientation
   others:[.38,.52],                 // 3D layers and 1F fade while the camera rises
   mm:[9,9],                     // the full minimap lands on the top view at 100%: walls, zone, route, points
-  shrink:[.68,1],                   // (.78–.84 rests on the full minimap) then it shrinks away; the interior fades as it gets smaller
-  bgFade:[.92,1]
+  shrink:[.64,.97],                   // (.78–.84 rests on the full minimap) then it shrinks away; the interior fades as it gets smaller
+  bgFade:[.8,1]
 };
 const HOLD_SEC=1.3;
 const FLASH_SEC=1.8,FLASH_AT=.31;
@@ -43,6 +43,8 @@ let flashStart=null;
 const _q=new URLSearchParams(location.search);
 const GLOW={u3:_q.get('gb')?'#'+_q.get('gb'):'#c4e2ff',g3:_q.get('gy')?'#'+_q.get('gy'):'#fff3b8'};
 const SCROLL_PX=3000;   // wheel distance for the whole sequence
+// 자동 재생: 도면이 다 그려진 뒤(start초) dur초 동안 끝까지 저절로 진행. 스크롤 없이 보고, 원하면 Skip.
+const AUTO={start:2.6,dur:7.5};let skipped=false,revealed=false;
 const LOOK={line:'#e9edf6',solidW:1.25,planW:.75,planA:.3,topW:1.6,guide:'#d2cdc6',bg:'#000622'};
 const IKEA_COLORS=false;   // set false to drop the blue/yellow facade
 const IKEA={blue:'#0058A3',yellow:'#FFDB00',wallH:{u3:90,g3:88},band:12};
@@ -372,13 +374,15 @@ function render(t,p){
   }
   {const c=hex(mix('#ffffff','#000622',ink).replace(/rgb\((\d+),(\d+),(\d+)\)/,(m,a,b,c)=>'#'+[a,b,c].map(v=>(+v).toString(16).padStart(2,'0')).join('')));
    splash.style.background=`rgba(${c.join(',')},${1-eio(seg(p,SP.bgFade))})`;
+   skipBtn.style.opacity=String(1-eio(seg(p,SP.bgFade)));skipBtn.style.pointerEvents=p>SP.bgFade[0]?'none':'';
 }
   bar.style.width=(p*100)+'%';
-  cue.classList.toggle('gone',!(td>=TL.cue&&p<.02));
+  cue.classList.add('gone'); // 자동 재생이라 '스크롤해서 들어가기' 안내는 숨김
 }
 
 /* ---------- scroll input → target progress (stops once at the showcase) ---------- */
 function nudge(px){
+  return; // 자동 재생으로 바뀌어 스크롤 입력은 쓰지 않습니다
   if(done)return;const n=performance.now()/1000;
   if(n<holdUntil)return;
   let v=clamp(PT+px/SCROLL_PX);
@@ -395,7 +399,7 @@ addEventListener('keydown',e=>{if(done)return;e.stopImmediatePropagation();
   if(['ArrowDown','PageDown',' '].includes(e.key)){e.preventDefault();nudge(SCROLL_PX*.07)}
   else if(['ArrowUp','PageUp'].includes(e.key)){e.preventDefault();nudge(-SCROLL_PX*.07)}
   else if(e.key==='Escape')skip()},{capture:true});
-function skip(){if(!done){held=true;holdUntil=0;PT=1}}
+function skip(){if(!done){held=true;holdUntil=0;PT=1;skipped=true}}
 skipBtn.addEventListener('click',skip);
 
 window.__splashRender=(t,p,fs)=>{flashStart=fs==null?null:fs;render(t,p)};
@@ -403,11 +407,14 @@ function resize(){dpr=Math.min(devicePixelRatio||1,2);VW=Math.round(innerWidth*d
   if(freeze)render(freeze.t,freeze.p);else if(!raf&&ctx)render(0,0)}
 const now=()=>performance.now()/1000;
 function frame(){
-  P+=(PT-P)*.07;if(Math.abs(PT-P)<.0005)P=PT;
   const tt=now()-t0;
+  if(!skipped){const k=clamp((tt-AUTO.start)/AUTO.dur);PT=k;}
+  P+=(PT-P)*(skipped?.07:.18);if(Math.abs(PT-P)<.0005)P=PT;
   if(flashStart==null&&P>=FLASH_AT)flashStart=tt;
   if(P<FLASH_AT-.1)flashStart=null;
   render(tt,P);
+  // 배경이 걷히기 시작하는 순간 메인에 알려서, 화면이 드러나는 동안 이미 걸어 들어가고 있게 함
+  if(!revealed&&P>=SP.bgFade[0]){revealed=true;dispatchEvent(new CustomEvent('splash:reveal'))}
   if(P>=.999){finish();return}
   raf=requestAnimationFrame(frame);
 }

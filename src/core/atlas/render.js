@@ -14,20 +14,22 @@ function makeRenderer(canvas){
       vec2 q=vec2((x*roll.x-y*roll.y)*lens.x,(x*roll.y+y*roll.x)*lens.y);
       if(barrel>0. && z>.05){vec2 n=q/z;float r2=dot(n*vec2(lens.y/lens.x,1.),n*vec2(lens.y/lens.x,1.))*.5;q=n*(1.+barrel*r2)*z;}
       gl_Position=vec4(q+haloOffset*z,z*1.002-0.08008,z);}`);
-  attach(gl.FRAGMENT_SHADER,`precision mediump float;uniform vec3 paper;uniform vec3 edge;uniform float opacity;uniform float alpha;uniform float reveal;uniform float boost;uniform float fog;uniform float nearPass;uniform float strongOnly;varying float t;varying float active;varying float dist;varying float ahead;
+  attach(gl.FRAGMENT_SHADER,`precision mediump float;uniform vec3 paper;uniform vec3 edge;uniform float opacity;uniform float alpha;uniform float reveal;uniform float boost;uniform float fog;uniform float nearPass;uniform float strongOnly;uniform float lit;varying float t;varying float active;varying float dist;varying float ahead;
     void main(){
       if(t>3.5){float f=clamp(ahead,0.,1.);float far=mix(5.,13.,f*f);float k=reveal*(1.-smoothstep(far*.4,far,dist))*mix(.3,1.,clamp(ahead*.6+.4,0.,1.));k*=smoothstep(.5,1.5,dist);if(k<.02)discard;gl_FragColor=vec4(mix(paper,edge,.42*k),alpha);return;}
       float op=t>2.5 ? .74 : (t>.4&&t<.6 ? opacity*.45 : opacity);
       op=mix(op,.97,boost*clamp(ahead,0.,1.)*(1.-smoothstep(3.,14.,dist)));
       op*=1.-fog*.78*smoothstep(5.,17.,dist);
       // 원근: 먼 선은 흐리게, 가까운 선은 굵게(nearPass에서 한 번 더 그림)
-      op*=1.-.6*smoothstep(6.,20.,dist);
+      // 원근감: 가까운 선은 진하게, 먼 선은 연하게. 불 켰을 때(lit) 더 강하게.
+      op=mix(op,.98,(1.-smoothstep(1.2,6.,dist))*(.25+.45*lit));
+      op*=1.-(.6+.28*lit)*smoothstep(3.5-1.5*lit,18.-4.*lit,dist);
       if(strongOnly>.5){if(t<2.5||t>3.5)discard;gl_FragColor=vec4(mix(paper,edge,mix(op,1.,active)),alpha);return;}
       if(nearPass>.5){float k=1.-smoothstep(1.8,6.,dist);if(k<.04||t<-.5)discard;gl_FragColor=vec4(mix(paper,edge,mix(op,1.,active)*k),alpha);return;}
       gl_FragColor=vec4(t<-.5?paper:mix(paper,edge,mix(op,1.,active)),alpha);}`);
   gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(program));
   gl.useProgram(program);
-  const u={};for(const n of ['eye','rot','lens','paper','edge','selected','opacity','haloOffset','alpha','reveal','heading','boost','roll','fog','nearPass','barrel','strongOnly'])u[n]=gl.getUniformLocation(program,n);
+  const u={};for(const n of ['eye','rot','lens','paper','edge','selected','opacity','haloOffset','alpha','reveal','heading','boost','roll','fog','nearPass','barrel','strongOnly','lit'])u[n]=gl.getUniformLocation(program,n);
   const a=gl.getAttribLocation(program,'pos'),t=gl.getAttribLocation(program,'tone'),id=gl.getAttribLocation(program,'objectId'),v=[];
   const DIST=LENSV[1]>0,L=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2]),mix=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];
   for(const f of faces){const P=f.points;
@@ -74,7 +76,7 @@ function makeRenderer(canvas){
     gl.viewport(0,0,w,h);gl.clearColor(...back,1);
     if(MODE===4&&reveal>.05){fade(back,.30+.7*(1-reveal));gl.useProgram(program);bindScene();gl.clear(gl.DEPTH_BUFFER_BIT);}else gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
     gl.uniform3fv(u.paper,back);gl.uniform3fv(u.edge,outline);
-    gl.uniform1f(u.opacity,lineOpacity(light));
+    gl.uniform1f(u.opacity,lineOpacity(light));gl.uniform1f(u.lit,light);
     gl.uniform1f(u.selected,selected);
     gl.uniform2f(u.haloOffset,0,0);gl.uniform1f(u.alpha,1);
     gl.uniform3f(u.eye,cam.x,cam.y||EYE,cam.z);gl.uniform2f(u.roll,Math.cos(cam.roll||0),Math.sin(cam.roll||0));gl.uniform4f(u.rot,Math.cos(cam.yaw),Math.sin(cam.yaw),Math.cos(cam.pitch),Math.sin(cam.pitch));
