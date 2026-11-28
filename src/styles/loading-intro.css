@@ -1,0 +1,190 @@
+/* =========================================================
+   IKEA 로딩 인트로 (src/styles/loading-intro.css)
+   흐름: 풀컬러 → 다크블루 → 설계도(로딩) → 선 → 세로선 → 메인
+   선택자는 전부 #intro 안쪽으로만 씀 (메인 스타일과 안 겹침)
+   ========================================================= */
+
+#intro { display: none; }
+html.intro-active, html.intro-active body { overflow: hidden; }
+html.intro-active #intro { display: block; }
+
+#intro {
+  /* Pretendard 가 설치돼 있으면 사용, 없으면 시스템 글꼴 (추가 다운로드 없음) */
+  --intro-font: 'Pretendard', 'Helvetica Neue', Arial, sans-serif;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #fff;
+  will-change: transform;
+}
+#intro svg { display: block; width: 100%; height: 100%; }
+
+/* ---------- 공통: 선 그리기 (pathLength=1 기준) ---------- */
+#intro .d {
+  fill: none;
+  stroke: #000c44;
+  stroke-width: 1;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  vector-effect: non-scaling-stroke;
+  transition: stroke-dashoffset var(--dur, 900ms) cubic-bezier(.65, 0, .25, 1) var(--dd, var(--d, 0ms));
+}
+
+/* ---------- 로고 등장 ---------- */
+#intro .logo {
+  opacity: 0;
+  transform: scale(.94);
+  transform-origin: 960px 540px;
+  transition: opacity .6s ease, transform 1s cubic-bezier(.2, .8, .2, 1);
+}
+#intro.p-color .logo { opacity: 1; transform: none; }
+
+/* ① 풀컬러 → ② 다크블루 */
+#intro .bluebox {
+  fill: #0c3494;
+  transform-origin: 960px 540px;
+  transition: opacity .5s ease, transform .7s cubic-bezier(.2, .8, .2, 1);
+}
+#intro.p-navy .bluebox { opacity: 0; transform: scale(1.05); }
+
+#intro .ell {
+  fill: none;
+  stroke: #000c44;
+  stroke-width: 1.5;
+  stroke-opacity: 0;
+  transition: stroke-opacity .5s ease, stroke-width .9s cubic-bezier(.65, 0, .25, 1), fill .5s ease;
+}
+#intro .ell-outer { fill: #fad917; }
+#intro .ell-mid { stroke-width: 7; }
+#intro.p-navy .ell { stroke-opacity: 1; }
+#intro.p-navy .ell-outer { fill: #fff; }
+
+#intro .letter {
+  fill: #0c3494;
+  stroke-width: 1.5;
+  transition:
+    fill .5s ease,
+    fill-opacity .8s ease .25s,
+    stroke-dashoffset 1.1s cubic-bezier(.65, 0, .25, 1) var(--d, 0ms);
+}
+#intro .letter.counter { fill: #fad917; }
+#intro.p-navy .letter { fill: #000c44; }
+#intro.p-navy .letter.counter { fill: #fff; }
+
+#intro .reg-c { fill: none; stroke: #0c3494; stroke-width: 2; transition: stroke .5s, stroke-width .8s; }
+#intro .reg-t { fill: #0c3494; font: 500 24px var(--intro-font); transition: fill .5s; }
+#intro.p-navy .reg-c { stroke: #000c44; }
+#intro.p-navy .reg-t { fill: #000c44; }
+
+/* ③ 설계도: 채움 빠지고 외곽선 + 격자 + 보조선 + 치수선 */
+#intro.p-draft .letter { fill-opacity: 0; stroke-dashoffset: 0; }
+#intro.p-draft .ell-mid { stroke-width: 1.5; }
+#intro.p-draft .reg-c { stroke-width: 1.5; }
+
+#intro .grid .d,
+#intro .tblock .d { --dur: 1100ms; }
+#intro .grid text,
+#intro .tblock text {
+  fill: #000c44;
+  font: 500 10px var(--intro-font);
+  letter-spacing: .04em;
+  opacity: 0;
+  transition: opacity .6s ease var(--d, 0ms);
+}
+#intro.p-draft .grid .d,
+#intro.p-draft .tblock .d { stroke-dashoffset: 0; }
+#intro.p-draft .grid text { opacity: 1; }
+
+/* 도면 표제란 (로딩 %) */
+#intro .tblock .tb-bg { fill: #fff; opacity: 0; transition: opacity .4s ease .3s; }
+#intro .tblock .tb-s { font-weight: 600; letter-spacing: .1em; --d: 600ms; }
+#intro .tblock .tb-pct { font: 700 30px var(--intro-font); letter-spacing: -.01em; font-variant-numeric: tabular-nums; --d: 650ms; }
+#intro .tblock .tb-track,
+#intro .tblock .tb-bar { fill: none; stroke: #000c44; vector-effect: non-scaling-stroke; opacity: 0; transition: opacity .5s ease .7s; }
+#intro .tblock .tb-track { stroke-width: 1; stroke-opacity: .2; }
+#intro .tblock .tb-bar { stroke-width: 3; }
+#intro.p-draft .tblock text,
+#intro.p-draft .tblock .tb-bg,
+#intro.p-draft .tblock .tb-track,
+#intro.p-draft .tblock .tb-bar { opacity: 1; }
+
+#intro .cons .d { --dur: 1400ms; stroke-opacity: .3; }
+#intro.p-draft .cons .d { stroke-dashoffset: 0; }
+
+#intro .dims .d { --dur: 800ms; }
+#intro .dims text {
+  fill: #000c44;
+  font: 700 13px var(--intro-font);
+  text-anchor: middle;
+  opacity: 0;
+  transition: opacity .5s ease var(--d, 0ms);
+}
+#intro .dims .ext { stroke-opacity: .45; }
+#intro .dims .dim-total { font-size: 16px; font-variant-numeric: tabular-nums; }
+#intro .dims .dot { opacity: 0; transition: opacity .4s ease 1.1s; }
+#intro.p-draft .dims .d { stroke-dashoffset: 0; }
+#intro.p-draft .dims text,
+#intro.p-draft .dims .dot { opacity: 1; }
+
+/* 로딩 대기 중: 스캔선이 위아래로 훑음 */
+#intro .scan { stroke: #000c44; stroke-width: 1; stroke-opacity: 0; vector-effect: non-scaling-stroke; transition: stroke-opacity .4s; }
+#intro.is-waiting .scan { stroke-opacity: .35; animation: intro-scan 1.4s ease-in-out infinite alternate; }
+@keyframes intro-scan { from { transform: translateY(0); } to { transform: translateY(274px); } }
+
+/* ④ 선만 남기기: 치수선·보조선 거꾸로 지워짐 */
+#intro.p-line .cons .d,
+#intro.p-line .dims .d { stroke-dashoffset: 1; --dur: 700ms; --dd: 0ms; }
+#intro.p-line .dims text,
+#intro.p-line .dims .dot { opacity: 0; transition-delay: 0ms; }
+#intro.p-line .scan { opacity: 0; }
+
+/* ⑤ 해체: 모양은 그대로, 각 선이 자기 경로를 따라 지워짐
+   - 격자·표제란: 바로 지워짐
+   - ® → 글자(바깥 I·A 먼저 → 안쪽 K·E): --xd 순서대로
+   - 타원: 반쪽 2개로 바꿔서, 맨 위부터 지워지며 아래 중앙점으로 내려감 (안쪽 → 바깥) */
+#intro.p-dissolve .grid .d,
+#intro.p-dissolve .tblock .d { stroke-dashoffset: 1; --dur: 600ms; --dd: 0ms; }
+#intro.p-dissolve .grid text,
+#intro.p-dissolve .tblock text,
+#intro.p-dissolve .tblock .tb-bg,
+#intro.p-dissolve .tblock .tb-track,
+#intro.p-dissolve .tblock .tb-bar,
+#intro.p-dissolve .reg-t { opacity: 0; transition: opacity .3s ease 0s; }
+
+#intro.p-dissolve .letter {
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset .6s cubic-bezier(.55, 0, .45, 1) var(--xd, 0ms);
+}
+#intro .reg-c { stroke-dasharray: 1; stroke-dashoffset: 0; }
+#intro.p-dissolve .reg-c {
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset .5s cubic-bezier(.55, 0, .45, 1) var(--xd, 0ms);
+}
+
+#intro .half {
+  fill: none; stroke: #000c44; stroke-width: 1.5;
+  stroke-dasharray: 1; stroke-dashoffset: 0;
+  opacity: 0;
+}
+#intro.p-dissolve .ell { opacity: 0; transition: none; }
+#intro.p-dissolve .half {
+  opacity: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset .65s cubic-bezier(.6, 0, .4, 1) var(--xd, 0ms);
+}
+
+/* ⑥ 타원이 모인 점에서 세로선이 아래로 */
+#intro .drop { stroke-width: 1.5; --dur: 600ms; }
+#intro.p-drop .drop { stroke-dashoffset: 0; transition-timing-function: cubic-bezier(.3, 0, .15, 1); }
+
+/* ⑦ 인트로가 위로 빠지며 메인 연결 */
+#intro.p-exit {
+  transform: translateY(-100%);
+  transition: transform 1s cubic-bezier(.76, 0, .24, 1);
+}
+
+/* 모션 줄이기 설정 */
+@media (prefers-reduced-motion: reduce) {
+  #intro, #intro * { transition-duration: 0s !important; transition-delay: 0s !important; animation: none !important; }
+  #intro.p-fade { opacity: 0; transition: opacity .4s ease !important; }
+}

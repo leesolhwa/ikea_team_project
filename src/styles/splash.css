@@ -1,0 +1,18 @@
+/* =========================================================
+   도면 스플래시 (src/styles/splash.css) — 선택자는 #fp- 로 시작 (메인 스타일과 안 겹침)
+   로딩 인트로(#intro, z-index 9999) 바로 아래에 깔려 있다가 인트로가 빠지면 보입니다.
+   ========================================================= */
+html.splash-active,html.splash-active body{overflow:hidden}
+#fp-splash{position:fixed;inset:0;z-index:9998;background:#000622;touch-action:none}
+#fp-splash canvas{position:absolute;inset:0;width:100%;height:100%}
+#fp-skip{position:fixed;top:18px;left:18px;z-index:9998;display:flex;align-items:center;gap:8px;font:inherit;font-size:14px;color:#eef0f6;background:#ffffff0d;border:1px solid #ffffff33;border-radius:999px;padding:0 16px 0 18px;height:44px;cursor:pointer;overflow:hidden;transition:opacity .4s,border-color .2s}
+#fp-skip:hover{border-color:#ffffffaa}
+#fp-skip:focus-visible{outline:2px solid #fff;outline-offset:3px}
+#fp-skip i{position:absolute;left:0;bottom:0;height:2px;width:0;background:#fff;opacity:.6}
+#fp-cue{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:9998;display:flex;flex-direction:column;align-items:center;gap:8px;color:#eef0f6;font-size:13px;opacity:0;transition:opacity .5s;pointer-events:none}
+#fp-cue span{display:block;width:22px;height:34px;border:1.5px solid #ffffffaa;border-radius:12px;position:relative}
+#fp-cue span::after{content:"";position:absolute;left:50%;top:7px;width:3px;height:7px;margin-left:-1.5px;border-radius:2px;background:#fff;animation:fpwheel 1.4s ease-in-out infinite}
+@keyframes fpwheel{0%{transform:translateY(0);opacity:1}70%{transform:translateY(9px);opacity:0}100%{opacity:0}}
+#fp-cue.gone, #fp-skip.gone{opacity:0!important;pointer-events:none!important}
+@media (prefers-reduced-motion:reduce){#fp-cue span::after{animation:none}}
+#fp-skip{font-family:Arial,"Malgun Gothic",sans-serif}
