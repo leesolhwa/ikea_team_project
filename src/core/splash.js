@@ -18,7 +18,7 @@ const S={"plumbX":640.0,"layers":{"up":{"origin":[71.0,419.0],"seed":[612.84,468
 const PRE={splashAt:0};   // the intro (separate) hands over a single centre line; the splash starts from it
 const LOGO={"ellipses": [[959.5, 539.5, 137.04, 340.02, 90.0], [959.5, 539.5, 133.04, 336.06, 90.0], [959.5, 539.5, 128.52, 332.06, 90.0]], "letters": {"I": [[695, 479], [694, 598], [752, 598], [752, 480]], "K": [[782, 480], [782, 598], [840, 598], [841, 552], [870, 598], [940, 598], [896, 532], [896, 530], [931, 481], [931, 479], [872, 479], [841, 524], [839, 479]], "E": [[948, 479], [947, 598], [1057, 598], [1057, 565], [1005, 564], [1006, 551], [1049, 551], [1048, 524], [1006, 524], [1005, 512], [1057, 511], [1057, 479]], "A": [[1107, 479], [1067, 598], [1113, 598], [1120, 578], [1157, 578], [1165, 598], [1225, 598], [1183, 480]], "Atri": [[1139, 516], [1128, 552], [1151, 552]], "R": [[1212, 487], [1212, 502], [1213, 503], [1213, 497], [1218, 496], [1223, 503], [1220, 498], [1222, 494], [1222, 489], [1220, 487]]}, "reg": [1217.08, 494.73, 15.02], "vline": [959.5, 672, 1060]};
 const NAVY='#000c44';
-const TL={reel:[.2,.8],lineEnd:.6,cascade:.3,cue:3.4};   // the intro's centre line is the first construction line: the two iso axes cross it at 2F, the drawing grows from there, the construction lines fade   // intro hands over a full-height centre line; it reels into 2F and the drawing starts there
+const TL={reel:[.2,.8],drop:[1.2,2.3],pan:[1.45,2.65],tail:[2.45,2.95],lineEnd:2.6,cascade:.3,cue:3.4};   // the intro's centre line is the first construction line: the two iso axes cross it at 2F, the drawing grows from there, the construction lines fade   // intro hands over a full-height centre line; it reels into 2F and the drawing starts there
 const DRAW={dur:1.5,soft:.06};   // continuous wavefront from the start point; fresh strokes fade in so the front reads soft             // drafting order: long lines first (outlines → walls → furniture), each traced from the start point outward   // the thread reaches 2F, the floors below follow in a cascade   // splash time starts at PRE.splashAt
 /* ===== scroll-driven sequence (0 → 1) ===== */
 const SP={
@@ -31,11 +31,11 @@ const SP={
   ikea:[.30,.355,.42,.47],
   flash:[.30,.36],
   elevate:[.38,.62],                // camera angle rises to straight overhead
-  spin:[.48,.74],                   // camera turns to the minimap orientation
+  spin:[.46,.72],                   // camera turns to the minimap orientation
   others:[.38,.52],                 // 3D layers and 1F fade while the camera rises
   mm:[9,9],                     // the full minimap lands on the top view at 100%: walls, zone, route, points
-  shrink:[.68,1],                   // (.78–.84 rests on the full minimap) then it shrinks away; the interior fades as it gets smaller
-  bgFade:[.92,1]
+  shrink:[.72,.97],                   // (.78–.84 rests on the full minimap) then it shrinks away; the interior fades as it gets smaller
+  bgFade:[.8,1]
 };
 const HOLD_SEC=1.3;
 const FLASH_SEC=1.8,FLASH_AT=.31;
@@ -43,6 +43,8 @@ let flashStart=null;
 const _q=new URLSearchParams(location.search);
 const GLOW={u3:_q.get('gb')?'#'+_q.get('gb'):'#c4e2ff',g3:_q.get('gy')?'#'+_q.get('gy'):'#fff3b8'};
 const SCROLL_PX=3000;   // wheel distance for the whole sequence
+// 자동 재생: 도면이 다 그려진 뒤(start초) dur초 동안 끝까지 저절로 진행. 스크롤 없이 보고, 원하면 Skip.
+const AUTO={start:4.8,dur:7.5};let skipped=false,revealed=false,started=false;
 const LOOK={line:'#e9edf6',solidW:1.25,planW:.75,planA:.3,topW:1.6,guide:'#d2cdc6',bg:'#000622'};
 const IKEA_COLORS=false;   // set false to drop the blue/yellow facade
 const IKEA={blue:'#0058A3',yellow:'#FFDB00',wallH:{u3:90,g3:88},band:12};
@@ -110,6 +112,9 @@ function mmRect(){   // the page's own minimap: the box of its walls on screen
   if(a>c){const r=m?m.getBoundingClientRect():{left:innerWidth-260,top:innerHeight-250,right:innerWidth-30,bottom:innerHeight-30};a=r.left;b=r.top;c=r.right;d=r.bottom}
   return[a*dpr,b*dpr,c*dpr,d*dpr]}
 function mmWallRect(){return mmRect()}
+let _pwp=0;function pageWallPx(){   // 페이지 미니맵 벽 선 두께(화면 px)
+  if(_pwp)return _pwp;const w=document.querySelector('#minimap .wall');if(!w)return 1.2;
+  const m=w.getScreenCTM(),sw=parseFloat(getComputedStyle(w).strokeWidth)||1;_pwp=Math.max(.6,sw*Math.hypot(m.a,m.b));return _pwp}
 
 function camera(p,o,V){   // one continuous move: frame the stack as it merges -> frame the top view as it rises and turns -> fly into the minimap
   const view=[0,0,VW,VH],pad=Math.min(VW,VH)*.07;
@@ -215,10 +220,11 @@ function drawGrad(c,k,amp){
 /* upper plan while shrinking: lines fade out by size as the plan gets smaller (details first, outer walls last) */
 function drawUpTop(c,A,m,dk,wpx){   // the long traced lines hand over to the minimap walls (m); the interior stays until the shrink (dk) and fades small → large
   const ly=LY.up,NB=ly.sizeB.length,NW=Math.round(NB*.72);setT(c,A);const sc=Math.sqrt(Math.abs(A[0]*A[4]-A[1]*A[3]));
-  c.strokeStyle=LOOK.line;c.lineWidth=wpx*dpr/sc;
+  c.strokeStyle=LOOK.line;c.lineWidth=Math.exp(lerp(Math.log(wpx),Math.log(pageWallPx()),eio(seg(dk,[.3,1]))))*dpr/sc;   // 줄어들수록 미니맵 선 두께로 얇아짐
   ly.sizeB.forEach((path,i)=>{let a;
-    if(i>=NW)a=1-eio(seg(dk,[.82,1]));          // the outline stays to the end, then hands over to the page's minimap
-    else a=1-eio(seg(dk,[.05,.6]))            // interior fades smoothly as it gets smaller
+    // 정방향이 된 뒤 줄어들면서 작은 선(가구 디테일)부터 차례로 빠지고, 큰 벽선은 깨끗한 미니맵 벽이 겹쳐 올라올 때 넘겨줌
+    if(i>=NW)a=1-eio(seg(dk,[.84,1]));                       // 큰 벽선만 끝까지 남아 페이지 미니맵과 같은 자리에서 교차
+    else{const k=i/NW;a=1-eio(seg(dk,[.02+k*.5,.26+k*.5]))}   // 작은 선(가구)부터 차례로 빠지며 미니멀해짐
     if(a>.002){c.globalAlpha=a;c.stroke(path)}});
   c.globalAlpha=1;
 }
@@ -231,30 +237,31 @@ function makeZone(col){
   c.fillStyle='#000';c.fillRect(pad-10000+50,pad+50,w-100,h-100);
   return cvz;
 }
+let MINI_FA=1;   // 마지막에 페이지 미니맵과 같은 자리에서 교차 페이드
 function drawMini(c,R,wallA,marks,th,lw){ // R: minimap units -> screen, affine [a,b,c,d,e,f] (row-major)
   const M=S.mini,T=isDark()?DARK:LIGHT,col=k=>mix(DARK[k],T[k],th);
-  c.setTransform(R[0],R[3],R[1],R[4],R[2],R[5]);c.globalAlpha=1;
-  if(false){c.globalAlpha=marks*(1-th);c.drawImage(zoneImg.dark,M.zone[0]-160,M.zone[1]-160);
-    c.globalAlpha=marks*th;c.drawImage(isDark()?zoneImg.dark:zoneImg.light,M.zone[0]-160,M.zone[1]-160);c.globalAlpha=1}
-  c.globalAlpha=wallA;c.strokeStyle=marks>0?col('wall'):LOOK.line;c.lineWidth=lw;c.lineCap='square';
+  c.setTransform(R[0],R[3],R[1],R[4],R[2],R[5]);c.globalAlpha=MINI_FA*(1);
+  if(false){c.globalAlpha=MINI_FA*(marks*(1-th));c.drawImage(zoneImg.dark,M.zone[0]-160,M.zone[1]-160);
+    c.globalAlpha=MINI_FA*(marks*th);c.drawImage(isDark()?zoneImg.dark:zoneImg.light,M.zone[0]-160,M.zone[1]-160);c.globalAlpha=1}
+  c.globalAlpha=MINI_FA*wallA;c.strokeStyle=marks>0?col('wall'):LOOK.line;c.lineWidth=lw;c.lineCap='square';
   c.beginPath();
   for(const[x1,y1,x2,y2]of M.walls){c.moveTo(x1,y1);c.lineTo(x2,y2)}
   if(wallA>0)c.stroke();
-  c.globalAlpha=1;
+  c.globalAlpha=MINI_FA*(1);
   if(marks<=0)return;
   const rt=M.route;let tot=0;const segL=[];for(let i=1;i<rt.length;i++){const l=Math.hypot(rt[i][0]-rt[i-1][0],rt[i][1]-rt[i-1][1]);segL.push(l);tot+=l}
   let left=tot*eo(seg(marks,[0,.75]));
   c.strokeStyle=col('route');c.lineWidth=6;c.lineJoin='round';c.beginPath();c.moveTo(rt[0][0],rt[0][1]);
   for(let i=1;i<rt.length&&left>0;i++){const f=Math.min(1,left/segL[i-1]);c.lineTo(lerp(rt[i-1][0],rt[i][0],f),lerp(rt[i-1][1],rt[i][1],f));left-=segL[i-1]}
   c.stroke();
-  const e=M.end;c.globalAlpha=clamp(marks*3);c.fillStyle=col('bg');c.beginPath();c.arc(e[0],e[1],e[2],0,7);c.fill();c.stroke();c.globalAlpha=1;
+  const e=M.end;c.globalAlpha=MINI_FA*(clamp(marks*3));c.fillStyle=col('bg');c.beginPath();c.arc(e[0],e[1],e[2],0,7);c.fill();c.stroke();c.globalAlpha=MINI_FA*(1);
   M.points.forEach(([x,y,n],i)=>{const s=eo(seg(marks,[.25+i*.1,.55+i*.1]));if(s<=0)return;
     const big=n===1;c.fillStyle=big?col('act'):col('pt');
 
     c.beginPath();c.arc(x,y,(big?25:19)*s,0,7);c.fill();c.shadowBlur=0});
   c.fillStyle=col('label');c.font='44px system-ui,-apple-system,sans-serif';c.textAlign='center';c.textBaseline='alphabetic';
-  M.labels.forEach(([x,y,t],i)=>{const s=seg(marks,[.35+i*.1,.65+i*.1]);if(s<=0)return;c.globalAlpha=s;c.fillText(t,x,y+15)});
-  c.globalAlpha=1;
+  M.labels.forEach(([x,y,t],i)=>{const s=seg(marks,[.35+i*.1,.65+i*.1]);if(s<=0)return;c.globalAlpha=MINI_FA*(s);c.fillText(t,x,y+15)});
+  c.globalAlpha=MINI_FA*(1);
 }
 function buildMiniSVG(){
   const M=S.mini,z=M.zone;
@@ -304,7 +311,10 @@ function drawLogo(tg,pan){
 function render(t,p){
   const tg=t+p*40;                       // scrolling early runs the prelude and drawing forward
   const td=tg-PRE.splashAt;              // splash time
-  const ink=1,offY=0;
+  const ink=1;
+  // 인트로에서 넘어올 때: 로고 선이 모인 점에서 선이 아래로 내려가고, 화면(카메라)이 그 선을 따라 내려가며 도면이 아래에서 올라옴
+  const ip=window.__introPoint,pan=ip?ess(seg(td,TL.pan)):1,offY=(1-pan)*VH;
+  if(ip){const isv=document.getElementById('introSvg');if(isv)isv.style.transform=`translateY(${(-pan*VH/dpr).toFixed(1)}px)`}
   const o=offsets(p);
   const e1=ess(seg(p,SP.elevate)),e2=ess(seg(p,SP.spin)),V=viewM(e1,e2);
   const cam=camera(p,o,V),C=cam.C,K0=cam.K0,Cm=mul(tr(0,offY),camM(C)),CV=mul(Cm,V),st=startTimes(K0);
@@ -329,8 +339,12 @@ function render(t,p){
      across the floor, the drawing starts there, and the line is drawn into that point */
   {const [x,y]=ap(Cm,S.plumbX,S.layers.u3.seed[1]);   // the intro's centre line draws itself into the point where 2F starts
    const r=eio(seg(td,TL.reel)),top=lerp(0,y,r),bot=lerp(VH,y,r);
-   if(bot-top>.5){ctx.lineCap='butt';ctx.globalAlpha=.9;ctx.strokeStyle=LOOK.line;ctx.lineWidth=1*dpr;
-     ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,bot);ctx.stroke();ctx.lineCap='round';ctx.globalAlpha=1}}
+   if(false&&bot-top>.5){ctx.lineCap='butt';ctx.globalAlpha=.9;ctx.strokeStyle=LOOK.line;ctx.lineWidth=1*dpr;
+     ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,bot);ctx.stroke();ctx.lineCap='round';ctx.globalAlpha=1}
+   // 로고 선이 모인 점에서 선이 아래로 뻗어 내려가 도면 시작점에 닿고, 꼬리가 따라 들어가면 도면이 그려지기 시작
+   if(ip){const ax=ip[0]*dpr,ay=ip[1]*dpr-pan*VH,h=eio(seg(td,TL.drop)),tl=eio(seg(td,TL.tail));
+     if(h>0&&tl<1){const y0=lerp(ay,y,tl),y1=lerp(ay,y,h);ctx.lineCap='round';ctx.globalAlpha=.95;ctx.strokeStyle=LOOK.line;ctx.lineWidth=1.3*dpr;
+       ctx.beginPath();ctx.moveTo(lerp(ax,x,tl),y0);ctx.lineTo(lerp(ax,x,h),y1);ctx.stroke();ctx.globalAlpha=1}}}
   /* guides: short dashed connectors in the gaps between floors, corner to corner; they shrink away as the floors meet */
   const gIn=eio(seg(p,SP.guidesIn)),gOut=1-seg(p,SP.guidesOut);
   if(gIn>0&&gOut>0){
@@ -351,6 +365,7 @@ function render(t,p){
     }
     ctx.setLineDash([]);ctx.globalAlpha=1;
   }
+  {const pm=document.getElementById('minimap');if(pm&&!done)pm.style.opacity=String(eio(seg(p,[.9,1])))}   // 페이지 미니맵은 도면이 그 자리에 도착한 뒤에만 드러남
   /* clean walls (the minimap's own walls) sit exactly on the traced plan, then ride the shrink into the minimap */
   const dk=ess(seg(p,SP.shrink));
   if(mmA>0){
@@ -364,21 +379,27 @@ function render(t,p){
     if(dk<=0)Rm=mul(mul(CV,layerW('up',o)),Q);
     else{const r=mmRect(),k=eio(seg(dk,[0,1])),L=(u,v,t)=>Math.exp(lerp(Math.log(u),Math.log(v),t));
       const R1=[(r[2]-r[0])/V0[0],0,r[0],0,(r[3]-r[1])/V0[1],r[1]],Rs=mul(Cm,mul(Cmf.length?inv(Cmf):Cmf,R0));
-      Rm=Rs}
+      // 끝 위치는 페이지 미니맵 벽과 정확히 같은 자리(벽 상자 → 화면 상자)로 맞춤
+      const bx=S.mini.box,sx=(r[2]-r[0])/(bx[2]-bx[0]),sy=(r[3]-r[1])/(bx[3]-bx[1]),R1e=[sx,0,r[0]-bx[0]*sx,0,sy,r[1]-bx[1]*sy],w=ess(dk);
+      Rm=Rs.map((v,i)=>lerp(v,R1e[i],w))}
     const sc=Math.sqrt(Math.abs(Rm[0]*Rm[4]-Rm[1]*Rm[3])),kk=eio(seg(dk,[.3,1]));
-    const lw=Math.exp(lerp(Math.log(LOOK.topW*dpr/sc),Math.log(7),kk));
+    const lw=Math.exp(lerp(Math.log(LOOK.topW*dpr/sc),Math.log(pageWallPx()*dpr/sc),kk));
+    MINI_FA=1-eio(seg(p,[.9,1]));
+    {const pm=document.getElementById('minimap');if(pm)pm.style.opacity=String(eio(seg(p,[.9,1])))}   // 페이지 미니맵은 캔버스 미니맵이 정확히 겹친 뒤에만 드러남
     drawMini(ctx,Rm,eio(seg(mmA,[0,.6])),seg(mmA,[.2,1]),eio(seg(dk,[.7,1])),lw);
     ctx.setTransform(1,0,0,1,0,0);
   }
   {const c=hex(mix('#ffffff','#000622',ink).replace(/rgb\((\d+),(\d+),(\d+)\)/,(m,a,b,c)=>'#'+[a,b,c].map(v=>(+v).toString(16).padStart(2,'0')).join('')));
    splash.style.background=`rgba(${c.join(',')},${1-eio(seg(p,SP.bgFade))})`;
+   skipBtn.style.opacity=String(1-eio(seg(p,SP.bgFade)));skipBtn.style.pointerEvents=p>SP.bgFade[0]?'none':'';
 }
   bar.style.width=(p*100)+'%';
-  cue.classList.toggle('gone',!(td>=TL.cue&&p<.02));
+  cue.classList.add('gone'); // 자동 재생이라 '스크롤해서 들어가기' 안내는 숨김
 }
 
 /* ---------- scroll input → target progress (stops once at the showcase) ---------- */
 function nudge(px){
+  return; // 자동 재생으로 바뀌어 스크롤 입력은 쓰지 않습니다
   if(done)return;const n=performance.now()/1000;
   if(n<holdUntil)return;
   let v=clamp(PT+px/SCROLL_PX);
@@ -395,7 +416,7 @@ addEventListener('keydown',e=>{if(done)return;e.stopImmediatePropagation();
   if(['ArrowDown','PageDown',' '].includes(e.key)){e.preventDefault();nudge(SCROLL_PX*.07)}
   else if(['ArrowUp','PageUp'].includes(e.key)){e.preventDefault();nudge(-SCROLL_PX*.07)}
   else if(e.key==='Escape')skip()},{capture:true});
-function skip(){if(!done){held=true;holdUntil=0;PT=1}}
+function skip(){if(!done){held=true;holdUntil=0;PT=1;skipped=true}}
 skipBtn.addEventListener('click',skip);
 
 window.__splashRender=(t,p,fs)=>{flashStart=fs==null?null:fs;render(t,p)};
@@ -403,17 +424,21 @@ function resize(){dpr=Math.min(devicePixelRatio||1,2);VW=Math.round(innerWidth*d
   if(freeze)render(freeze.t,freeze.p);else if(!raf&&ctx)render(0,0)}
 const now=()=>performance.now()/1000;
 function frame(){
-  P+=(PT-P)*.07;if(Math.abs(PT-P)<.0005)P=PT;
   const tt=now()-t0;
+  if(!skipped){const k=clamp((tt-AUTO.start)/AUTO.dur);PT=k;}
+  P+=(PT-P)*(skipped?.07:.18);if(Math.abs(PT-P)<.0005)P=PT;
   if(flashStart==null&&P>=FLASH_AT)flashStart=tt;
   if(P<FLASH_AT-.1)flashStart=null;
   render(tt,P);
+  // 배경이 걷히기 시작하는 순간 메인에 알려서, 화면이 드러나는 동안 이미 걸어 들어가고 있게 함
+  if(!revealed&&P>=SP.bgFade[0]){revealed=true;dispatchEvent(new CustomEvent('splash:reveal'))}
   if(P>=.999){finish();return}
   raf=requestAnimationFrame(frame);
 }
 function finish(){
   done=true;cancelAnimationFrame(raf);
   mm.classList.add('on');site.classList.add('on');site.removeAttribute('aria-hidden');
+  {const pm=document.getElementById('minimap');if(pm)pm.style.opacity=''}
   splash.remove();skipBtn.remove();cue.remove();document.documentElement.classList.remove('splash-active');
   dispatchEvent(new CustomEvent('splash:done'));
 }
@@ -446,7 +471,9 @@ try{
   if(freeze){render(freeze.t,freeze.p);document.title='ready'}
   else if(matchMedia('(prefers-reduced-motion: reduce)').matches)finish();
   else{render(0,0);
-    if(document.getElementById('intro'))document.addEventListener('intro:done',play,{once:true});   // 인트로가 위로 빠질 때 아래에서 세로선이 보이고, 다 빠지면 시작
+    if(document.getElementById('intro')){   // 인트로의 로고 선이 풀리기 시작하는 순간(handoff) 같은 자리에서 도면을 그리기 시작
+      let go=()=>{if(!started){started=true;play()}};
+      document.addEventListener('intro:handoff',go,{once:true});document.addEventListener('intro:done',go,{once:true})}
     else play()}
 }catch(err){console.error(err);finish()}
 }

@@ -1,4 +1,6 @@
 const $=s=>document.getElementById(s);
+var calm=false; // 진행자 키(M)로 이동 효과 끄기
+var waitingSplash=false; // 스플래시가 끝나길 기다리는 동안 섹션 제목을 숨김
 const rooms=[
   {id:'about',name:'About',ko:'거실',page:'./src/sections/about/about-ikea.html',text:'왼쪽 거실에서 탐색을 시작합니다. 소파와 낮은 테이블 너머로 안쪽 전시 공간이 이어집니다.',items:['소파와 플로어 램프가 놓인 휴식 공간','창가를 따라 이어지는 작은 좌석들']},
   {id:'ikea-ps',name:'IKEA PS',ko:'컬렉션 전시실',page:'./src/sections/collection/collection.html',text:'거실 뒤편의 전시실입니다. 선반 앞에는 휜 합판으로 좌석과 등받이를 연결한 의자가 놓여 있습니다.',items:['벽면을 따라 놓인 오픈 선반','낮은 전시대 위의 의자와 조명']},
@@ -9,7 +11,7 @@ const rooms=[
 const world=$('world'),scene=document.querySelector('.scene'),caption=document.querySelector('.caption');
 const dialog=$('detail'),render=makeRenderer(world),doors=$('doors'),opening=$('opening');
 const guides=$('guides'),pick=makePicker();
-let pointer=null;
+let pointer=null,revealLevel=0,lastEye=null;const heading=[0,-1];
 function clearPointer(){pointer=null;guides.hidden=true;schedule();}
 document.addEventListener('pointermove',e=>{
   if(e.pointerType==='touch'){if(pointer)clearPointer();return;}
@@ -31,15 +33,25 @@ function paintScene(cam){
     }
   }
   if(selected!==heroIds[index])selected=0;
-  guides.hidden=!show;scene.toggleAttribute('data-object-hover',selected>0);
+  guides.hidden=true; // 커서 십자 격자선 끔
+  scene.toggleAttribute('data-object-hover',selected>0);
 
-  render(cam,lightLevel(performance.now()),selected);
+  // 걷는 동안만 리빌 라인(벽 골조·출입구 트러스)을 올립니다.
+  const revealTarget=approach&&!reduced.matches&&!calm?1:0; // '동작 줄이기' 설정이나 진행자 키(M)면 이동 효과 끔
+  revealLevel+=(revealTarget-revealLevel)*.14;
+  if(Math.abs(revealTarget-revealLevel)>.01)schedule();else revealLevel=revealTarget;
+  // 진행 방향(걸어가는 쪽)으로 리빌 선을 더 멀리, 더 진하게 보여 줍니다.
+  if(lastEye){const dx=cam.x-lastEye.x,dz=cam.z-lastEye.z,n=Math.hypot(dx,dz);
+    if(n>.002){heading[0]+=(dx/n-heading[0])*.25;heading[1]+=(dz/n-heading[1])*.25;const m=Math.hypot(...heading)||1;heading[0]/=m;heading[1]/=m;}}
+  lastEye={x:cam.x,z:cam.z};
+  if(MODE===5){const vg=document.getElementById('vig');if(vg)vg.style.opacity=(revealLevel*.7).toFixed(3);}
+  render(cam,lightLevel(performance.now()),selected,revealLevel,heading);
 }
 function project(x,y,z,c){
-  const dx=x-c.x,dz=z-c.z,depth=dx*Math.sin(c.yaw)-dz*Math.cos(c.yaw),up=y-1.57;
+  const dx=x-c.x,dz=z-c.z,depth=dx*Math.sin(c.yaw)-dz*Math.cos(c.yaw),up=y-EYE;
   const dist=depth*Math.cos(c.pitch)+up*Math.sin(c.pitch);
   if(dist<.12)return null;
-  const w=world.clientWidth,h=world.clientHeight,k=h*(w/h<1?1.22:1.53)/2;
+  const w=world.clientWidth,h=world.clientHeight,k=h*(w/h<1?1.05:1.25)*LENSV[0]/2;
   return [(w/2+(dx*Math.cos(c.yaw)+dz*Math.sin(c.yaw))*k/dist),(h/2-(up*Math.cos(c.pitch)-depth*Math.sin(c.pitch))*k/dist)];
 }
 function showDoor(i,c){
@@ -124,14 +136,14 @@ const stops=[
   [14.72,5.54,16.98,1.13,2.45],[24.12,13.57,23.53,1.05,11.25],
   [21.72,5.30,21.44,.87,2.72]
 ];
-stops.forEach(([x,z,tx,ty,tz],i)=>Object.assign(cameras[i],{x,z,yaw:Math.atan2(tx-x,z-tz),pitch:Math.atan2(ty-1.57,Math.hypot(tx-x,tz-z))}));
+stops.forEach(([x,z,tx,ty,tz],i)=>Object.assign(cameras[i],{x,z,yaw:Math.atan2(tx-x,z-tz),pitch:Math.atan2(ty-EYE,Math.hypot(tx-x,tz-z))}));
 cameras.push({x:29.85,z:5.55,yaw:Math.PI/2,pitch:-.04});
 
 // The opening shot goes straight to About. Later walks follow the doorways.
 const entrance={x:entryDoor.x,z:entryDoor.z+.95,yaw:-.32,pitch:-.07};
 const stations=[entrance,...cameras];
 const corridors=[
-  [],
+  [[7.15,16.75],[6.4,15.95]], // 입구→About: 날개벽을 뚫고 지나가지 않게 문 가운데로
   [[8.78,12.85],[8.96,9.25],[8.96,5.10]],
   [[13.12,4.86]],
   [[15.48,6.56],[16.32,6.76],[19.40,6.76],[20.42,11.36],[21.43,11.60]],
@@ -176,8 +188,20 @@ function samplePath(d){
   return view;
 }
 function smooth(t){return t*t*(3-2*t);}
+// 몰입 모드(시안5): 가는 방향을 미리 바라보고, 꺾일 때 살짝 기웁니다.
+let walkRoll=0,prevYaw=null;
+function immerse(v,a,t){
+  const dir=a.to>a.from?1:-1;
+  const ahead=samplePath(Math.max(0,Math.min(lengths.at(-1),travel+dir*1.9)));
+  const dx=ahead.x-v.x,dz=ahead.z-v.z;
+  if(Math.hypot(dx,dz)>.05){const w=smooth(Math.max(0,Math.min(1,t/.24,(1-t)/.34)));v.yaw+=arc(v.yaw,Math.atan2(dx,-dz))*w*.82;}
+  const turn=prevYaw===null?0:arc(prevYaw,v.yaw);prevYaw=v.yaw;
+  walkRoll+=(Math.max(-.055,Math.min(.055,-turn*7))-walkRoll)*.12;
+  v.y=EYE;
+  v.roll=walkRoll;
+}
 function snapTo(i){
-  travel=anchors[i+1];approach=null;mapTween=null;Object.assign(eye,cameras[i]);
+  travel=anchors[i+1];approach=null;mapTween=null;Object.assign(eye,cameras[i]);eye.y=EYE;eye.roll=0;eye.wide=0;walkRoll=0;prevYaw=null;
 }
 function tourView(now){
   if(approach){
@@ -188,7 +212,11 @@ function tourView(now){
     if(t===1||reduced.matches){
       snapTo(index);holdUntil=now+380;
     }
-    else{Object.assign(eye,samplePath(travel));schedule();}
+    else{const v=samplePath(travel);
+      if(WIDE&&HEJ_AT){const d=Math.hypot(v.x-HEJ_AT[0],v.z-HEJ_AT[1]),r=HEJ_AT[2];
+        const prox=1-smooth(Math.max(0,Math.min(1,(d-r*.45)/(r*.55)))),ease=smooth(Math.max(0,Math.min(1,t/.25,(1-t)/.3)));
+        v.wide=WIDE*prox*ease;}
+      Object.assign(eye,v);schedule();}
   }
   return eye;
 }
@@ -272,7 +300,7 @@ function draw(){
   frame=0;if(dialog.open)return;
   const cam=tourView(performance.now());paintScene(cam);doors.style.visibility="hidden";
   if(approach||busy){guides.hidden=true;scene.removeAttribute('data-object-hover')}
-  caption.hidden=!!approach||index===rooms.length;const atExit=index===rooms.length&&!approach;
+  caption.hidden=!!approach||waitingSplash||index===rooms.length;const atExit=index===rooms.length&&!approach;
   const finishingWalk=index===rooms.length&&approach&&approach.start+approach.duration-performance.now()<=450;
   document.body.classList.toggle('at-exit',atExit);
   document.body.classList.toggle('show-footer',atExit||Boolean(finishingWalk));
@@ -530,7 +558,15 @@ world.addEventListener('click',e=>{
 world.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&!e.repeat&&canEnterRoom())enter(e,index);
 });
-new ResizeObserver(schedule).observe(world);theme();syncDetail();if(index===0&&initialRoom!=='about'&&!dialog.open&&!reduced.matches)walkIn();
+new ResizeObserver(schedule).observe(world);theme();syncDetail();if(index===0&&initialRoom!=='about'&&!dialog.open&&!reduced.matches){
+  // 스플래시가 재생 중이면 입구에 서 있다가, 스플래시가 미니맵으로 접히며 끝나는 순간 걸어 들어갑니다.
+  if(document.getElementById('fp-splash')){
+    travel=0;Object.assign(eye,entrance);waitingSplash=true;schedule();
+    let go=()=>{if(!waitingSplash)return;waitingSplash=false;walkIn();};
+    addEventListener('splash:reveal',go,{once:true});addEventListener('splash:done',go,{once:true});
+  }
+  else walkIn();
+}
 // 상세페이지에서 나와 돌아왔을 때: 들어갈 때 원이 커지던 것의 반대로, 아이보리 원이 방 문 쪽으로 오므라들며 방이 보입니다.
 // (index.html 이 상세페이지에서 돌아온 것을 알아채면 동작. 원 색은 테마와 상관없이 --paper)
 (function returnWipe(){
@@ -550,3 +586,6 @@ new ResizeObserver(schedule).observe(world);theme();syncDetail();if(index===0&&i
     motion.onfinish=()=>{motion.cancel();wipe.hidden=true};
   }));
 })();
+
+// 사용성 테스트용 숨은 키: M을 누르면 이동 중 벽 줄눈·밀도 효과를 끄고 켭니다(어지럽다는 참가자용).
+addEventListener('keydown',e=>{if((e.key==='m'||e.key==='M')&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!(e.target instanceof HTMLInputElement)){calm=!calm;schedule();}});
