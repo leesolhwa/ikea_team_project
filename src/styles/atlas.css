@@ -87,3 +87,10 @@ dialog[data-preview]:not([open]){display:block;z-index:6;pointer-events:none;ove
 @media(max-width:620px){.folio{--navh:44px}.folionav .back{width:11%}.folionav button{padding:0 4px}.opener p{padding-right:8px;font-size:17px}.spread h3{font-size:clamp(19px,4.5vw,30px)}.spread p{padding:0 9px}}
 .folio h2:focus{outline:none}.folio[data-about] h2{font-size:clamp(68px,15.2vw,240px)}.folio[data-about] h2 span{transform:scaleX(1.14);transform-origin:left center}.folionav .back{width:38px;margin-right:max(0px,calc(24% - 38px))}@media(max-width:620px){.folionav .back{margin-right:0}}
 #world,#world:active{cursor:default}.scene[data-room-ready] #world{cursor:pointer}
+
+/* ── 쇼룸 뼈대 추가 ── */
+/* 이동할 때 화면 가장자리를 살짝 어둡게(app.js가 opacity 조절). 불 켰을 때는 숨김 */
+#vig{position:fixed;inset:0;pointer-events:none;z-index:2;opacity:0;background:radial-gradient(ellipse at 50% 52%,transparent 46%,rgba(1,4,14,.55) 78%,rgba(1,4,14,.92) 100%)}
+html[data-theme=light] #vig{display:none}
+/* 섹션 제목(About 등)은 어떤 링크 상태에서도 흰색 */
+html:not([data-theme=light]) .caption h1 a,html:not([data-theme=light]) .caption h1 a:link,html:not([data-theme=light]) .caption h1 a:visited,html:not([data-theme=light]) .caption h1 a:hover,html:not([data-theme=light]) .caption h1 a:active,html:not([data-theme=light]) .caption h1 a:focus{color:#fff!important;-webkit-text-fill-color:#fff}
