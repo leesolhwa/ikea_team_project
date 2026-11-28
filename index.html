@@ -22,10 +22,12 @@
     location.replace('./sections.html' + location.search + location.hash);
   }
 </script>
-<link rel="stylesheet" href="./src/styles/atlas.css"><link rel="stylesheet" href="./src/styles/loading-intro.css"></head>
+<link rel="stylesheet" href="./src/styles/atlas.css"><link rel="stylesheet" href="./src/styles/loading-intro.css"><link rel="stylesheet" href="./src/styles/splash.css"></head>
 <body>
 <!-- 로딩 인트로: body 맨 위에 두고 스크립트는 defer 없이 바로 실행 (첫 화면부터 인트로) -->
 <div id="intro" aria-hidden="true"><svg id="introSvg" xmlns="http://www.w3.org/2000/svg"></svg></div><script src="./src/core/loading-intro.js"></script>
+<!-- 도면 스플래시: 인트로 바로 아래 층. 인트로가 빠지면 세로선에서 이어서 시작하고, 끝나면 미니맵 자리로 들어감 -->
+<div id="fp-splash"><canvas id="fp-cv"></canvas></div><div id="fp-cue"><span></span>스크롤해서 들어가기</div><button id="fp-skip" type="button" aria-label="스플래시 건너뛰기">Skip <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 2.5 8 7l-5 4.5M8.5 2.5 13 7l-4.5 4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><i></i></button><script src="./src/core/splash.js"></script>
 <main><section class="scene" aria-label="스크롤로 둘러보는 이케아 공간"><canvas id="world" tabindex="0" role="link" aria-label="공간 탐색" aria-disabled="true"></canvas>
 <svg id="doors" aria-hidden="true"><defs><pattern id="hatch" width="9" height="9" patternUnits="userSpaceOnUse"><path d="M-1 1L1 -1 M0 9L9 0 M8 10L10 8" fill="none" stroke-width=".85"/></pattern></defs><polygon id="opening"></polygon></svg>
 <div id="guides" aria-hidden="true" hidden></div>
