@@ -18,7 +18,7 @@ const S={"plumbX":640.0,"layers":{"up":{"origin":[71.0,419.0],"seed":[612.84,468
 const PRE={splashAt:0};   // the intro (separate) hands over a single centre line; the splash starts from it
 const LOGO={"ellipses": [[959.5, 539.5, 137.04, 340.02, 90.0], [959.5, 539.5, 133.04, 336.06, 90.0], [959.5, 539.5, 128.52, 332.06, 90.0]], "letters": {"I": [[695, 479], [694, 598], [752, 598], [752, 480]], "K": [[782, 480], [782, 598], [840, 598], [841, 552], [870, 598], [940, 598], [896, 532], [896, 530], [931, 481], [931, 479], [872, 479], [841, 524], [839, 479]], "E": [[948, 479], [947, 598], [1057, 598], [1057, 565], [1005, 564], [1006, 551], [1049, 551], [1048, 524], [1006, 524], [1005, 512], [1057, 511], [1057, 479]], "A": [[1107, 479], [1067, 598], [1113, 598], [1120, 578], [1157, 578], [1165, 598], [1225, 598], [1183, 480]], "Atri": [[1139, 516], [1128, 552], [1151, 552]], "R": [[1212, 487], [1212, 502], [1213, 503], [1213, 497], [1218, 496], [1223, 503], [1220, 498], [1222, 494], [1222, 489], [1220, 487]]}, "reg": [1217.08, 494.73, 15.02], "vline": [959.5, 672, 1060]};
 const NAVY='#000c44';
-const TL={reel:[.2,.8],thread:[1.0,1.5],tail:[1.2,1.75],lineEnd:1.45,cascade:.3,cue:3.4};   // the intro's centre line is the first construction line: the two iso axes cross it at 2F, the drawing grows from there, the construction lines fade   // intro hands over a full-height centre line; it reels into 2F and the drawing starts there
+const TL={reel:[.2,.8],drop:[1.2,2.3],pan:[1.45,2.65],tail:[2.45,2.95],lineEnd:2.6,cascade:.3,cue:3.4};   // the intro's centre line is the first construction line: the two iso axes cross it at 2F, the drawing grows from there, the construction lines fade   // intro hands over a full-height centre line; it reels into 2F and the drawing starts there
 const DRAW={dur:1.5,soft:.06};   // continuous wavefront from the start point; fresh strokes fade in so the front reads soft             // drafting order: long lines first (outlines → walls → furniture), each traced from the start point outward   // the thread reaches 2F, the floors below follow in a cascade   // splash time starts at PRE.splashAt
 /* ===== scroll-driven sequence (0 → 1) ===== */
 const SP={
@@ -44,7 +44,7 @@ const _q=new URLSearchParams(location.search);
 const GLOW={u3:_q.get('gb')?'#'+_q.get('gb'):'#c4e2ff',g3:_q.get('gy')?'#'+_q.get('gy'):'#fff3b8'};
 const SCROLL_PX=3000;   // wheel distance for the whole sequence
 // 자동 재생: 도면이 다 그려진 뒤(start초) dur초 동안 끝까지 저절로 진행. 스크롤 없이 보고, 원하면 Skip.
-const AUTO={start:3.8,dur:7.5};let skipped=false,revealed=false,started=false;
+const AUTO={start:4.8,dur:7.5};let skipped=false,revealed=false,started=false;
 const LOOK={line:'#e9edf6',solidW:1.25,planW:.75,planA:.3,topW:1.6,guide:'#d2cdc6',bg:'#000622'};
 const IKEA_COLORS=false;   // set false to drop the blue/yellow facade
 const IKEA={blue:'#0058A3',yellow:'#FFDB00',wallH:{u3:90,g3:88},band:12};
@@ -306,7 +306,10 @@ function drawLogo(tg,pan){
 function render(t,p){
   const tg=t+p*40;                       // scrolling early runs the prelude and drawing forward
   const td=tg-PRE.splashAt;              // splash time
-  const ink=1,offY=0;
+  const ink=1;
+  // 인트로에서 넘어올 때: 로고 선이 모인 점에서 선이 아래로 내려가고, 화면(카메라)이 그 선을 따라 내려가며 도면이 아래에서 올라옴
+  const ip=window.__introPoint,pan=ip?ess(seg(td,TL.pan)):1,offY=(1-pan)*VH;
+  if(ip){const isv=document.getElementById('introSvg');if(isv)isv.style.transform=`translateY(${(-pan*VH/dpr).toFixed(1)}px)`}
   const o=offsets(p);
   const e1=ess(seg(p,SP.elevate)),e2=ess(seg(p,SP.spin)),V=viewM(e1,e2);
   const cam=camera(p,o,V),C=cam.C,K0=cam.K0,Cm=mul(tr(0,offY),camM(C)),CV=mul(Cm,V),st=startTimes(K0);
@@ -333,11 +336,10 @@ function render(t,p){
    const r=eio(seg(td,TL.reel)),top=lerp(0,y,r),bot=lerp(VH,y,r);
    if(false&&bot-top>.5){ctx.lineCap='butt';ctx.globalAlpha=.9;ctx.strokeStyle=LOOK.line;ctx.lineWidth=1*dpr;
      ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,bot);ctx.stroke();ctx.lineCap='round';ctx.globalAlpha=1}
-   // 로고 선이 모인 점(인트로 타원 아래 중앙)에서 선 하나가 뻗어 나가 도면 시작점에 닿고, 꼬리가 따라 들어가면서 도면이 그려지기 시작
-   const ip=window.__introPoint;
-   if(ip){const ax=ip[0]*dpr,ay=ip[1]*dpr,h=eio(seg(td,TL.thread)),tl=eio(seg(td,TL.tail));
-     if(h>0&&tl<1){ctx.lineCap='round';ctx.globalAlpha=.95;ctx.strokeStyle=LOOK.line;ctx.lineWidth=1.3*dpr;
-       ctx.beginPath();ctx.moveTo(lerp(ax,x,tl),lerp(ay,y,tl));ctx.lineTo(lerp(ax,x,h),lerp(ay,y,h));ctx.stroke();ctx.globalAlpha=1}}}
+   // 로고 선이 모인 점에서 선이 아래로 뻗어 내려가 도면 시작점에 닿고, 꼬리가 따라 들어가면 도면이 그려지기 시작
+   if(ip){const ax=ip[0]*dpr,ay=ip[1]*dpr-pan*VH,h=eio(seg(td,TL.drop)),tl=eio(seg(td,TL.tail));
+     if(h>0&&tl<1){const y0=lerp(ay,y,tl),y1=lerp(ay,y,h);ctx.lineCap='round';ctx.globalAlpha=.95;ctx.strokeStyle=LOOK.line;ctx.lineWidth=1.3*dpr;
+       ctx.beginPath();ctx.moveTo(lerp(ax,x,tl),y0);ctx.lineTo(lerp(ax,x,h),y1);ctx.stroke();ctx.globalAlpha=1}}}
   /* guides: short dashed connectors in the gaps between floors, corner to corner; they shrink away as the floors meet */
   const gIn=eio(seg(p,SP.guidesIn)),gOut=1-seg(p,SP.guidesOut);
   if(gIn>0&&gOut>0){

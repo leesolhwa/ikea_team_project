@@ -2,7 +2,7 @@
    IKEA 로딩 인트로 (src/core/loading-intro.js)
    index.html 의 <div id="intro"><svg id="introSvg"></svg></div> 바로 뒤에서 불러와야
    첫 화면부터 인트로가 뜸 (defer/async 쓰지 말 것)
-   흐름: 풀컬러 → 다크블루 → 설계도(로딩 %) → 선 → 남색 도면으로 반전 → 로고 선이 풀려 한 점으로 모임 → 그 선이 이어져 층별 도면이 그려짐
+   흐름: 풀컬러 → 다크블루 → 설계도(로딩 %) → 선 → 남색 도면으로 반전 → 로고 선이 풀려 한 점으로 모임 → 선이 아래로 내려가고 화면이 따라 내려가며 스플래시 도면
    - 같은 탭에서 한 번만 재생 (sessionStorage)
    - 상세페이지에서 방으로 돌아올 때(html.atlas-returning)는 재생 안 함
    - 확인용 주소: ?intro (항상 재생), ?intro=hold (설계도 단계에서 멈춤)
@@ -362,11 +362,11 @@
     later(function () {
       add('p-night');              // ⑤ 같은 도면 그대로 밤 화면으로: 바탕이 남색으로, 선은 밝게 (스플래시와 같은 색)
       later(function () {
-        add('p-dissolve');         // ⑥ 로고 선이 자기 경로를 따라 풀리며 아래 중앙점으로 모임 → 그 점에서 선 하나가 도면 시작점까지 이어지고 도면이 그려짐
+        add('p-dissolve');         // ⑥ 로고 선이 자기 경로를 따라 풀리며 아래 중앙점으로 모임 → 그 점에서 선이 아래로 내려가고 화면이 따라 내려가며 도면이 나타남
         window.__introPoint = [L.cx, L.y0]; // 로고 선이 모이는 점 (타원 아래 중앙) → 스플래시가 여기서 선을 이어받음
         document.dispatchEvent(new CustomEvent('intro:handoff'));
         document.dispatchEvent(new CustomEvent('intro:exit'));
-        later(cleanup, CFG.dissolveDur + 250);
+        later(cleanup, 2800); // 스플래시가 화면을 아래로 내리는 동안(약 2.7초) 로고 레이어를 같이 위로 밀어 올린 뒤 정리
       }, CFG.nightDur);
     }, CFG.lineHold);
   }
