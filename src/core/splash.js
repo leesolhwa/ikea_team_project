@@ -31,10 +31,10 @@ const SP={
   ikea:[.30,.355,.42,.47],
   flash:[.30,.36],
   elevate:[.38,.62],                // camera angle rises to straight overhead
-  spin:[.48,.74],                   // camera turns to the minimap orientation
+  spin:[.46,.72],                   // camera turns to the minimap orientation
   others:[.38,.52],                 // 3D layers and 1F fade while the camera rises
-  mm:[.5,.62],                     // the full minimap lands on the top view at 100%: walls, zone, route, points
-  shrink:[.64,.97],                   // (.78–.84 rests on the full minimap) then it shrinks away; the interior fades as it gets smaller
+  mm:[9,9],                     // the full minimap lands on the top view at 100%: walls, zone, route, points
+  shrink:[.72,.97],                   // (.78–.84 rests on the full minimap) then it shrinks away; the interior fades as it gets smaller
   bgFade:[.8,1]
 };
 const HOLD_SEC=1.3;
@@ -220,10 +220,11 @@ function drawGrad(c,k,amp){
 /* upper plan while shrinking: lines fade out by size as the plan gets smaller (details first, outer walls last) */
 function drawUpTop(c,A,m,dk,wpx){   // the long traced lines hand over to the minimap walls (m); the interior stays until the shrink (dk) and fades small → large
   const ly=LY.up,NB=ly.sizeB.length,NW=Math.round(NB*.72);setT(c,A);const sc=Math.sqrt(Math.abs(A[0]*A[4]-A[1]*A[3]));
-  c.strokeStyle=LOOK.line;c.lineWidth=wpx*dpr/sc;
+  c.strokeStyle=LOOK.line;c.lineWidth=Math.exp(lerp(Math.log(wpx),Math.log(pageWallPx()),eio(seg(dk,[.3,1]))))*dpr/sc;   // 줄어들수록 미니맵 선 두께로 얇아짐
   ly.sizeB.forEach((path,i)=>{let a;
-    if(i>=NW)a=1-eio(seg(dk,[.82,1]));          // the outline stays to the end, then hands over to the page's minimap
-    else a=1-eio(seg(dk,[.05,.6]))            // interior fades smoothly as it gets smaller
+    // 정방향이 된 뒤 줄어들면서 작은 선(가구 디테일)부터 차례로 빠지고, 큰 벽선은 깨끗한 미니맵 벽이 겹쳐 올라올 때 넘겨줌
+    if(i>=NW)a=1-eio(seg(dk,[.84,1]));                       // 큰 벽선만 끝까지 남아 페이지 미니맵과 같은 자리에서 교차
+    else{const k=i/NW;a=1-eio(seg(dk,[.02+k*.5,.26+k*.5]))}   // 작은 선(가구)부터 차례로 빠지며 미니멀해짐
     if(a>.002){c.globalAlpha=a;c.stroke(path)}});
   c.globalAlpha=1;
 }
@@ -319,7 +320,6 @@ function render(t,p){
   const cam=camera(p,o,V),C=cam.C,K0=cam.K0,Cm=mul(tr(0,offY),camM(C)),CV=mul(Cm,V),st=startTimes(K0);
   const fadeA=seg(p,SP.mergeA),oth=eio(seg(p,SP.others));
   const op={u3:1-oth,g3:1-oth,gp:LOOK.planA*(1-oth),up:lerp(LOOK.planA,1,oth)};
-  const mmIn=eio(seg(seg(p,SP.mm),[0,.8]));op.up*=1-mmIn;   // 깨끗한 미니맵 벽이 정확히 겹쳐 올라오는 동안 그려진 도면은 사라짐
   const ik=IKEA_COLORS?eio(seg(p,[SP.ikea[0],SP.ikea[1]]))*(1-eio(seg(p,[SP.ikea[2],SP.ikea[3]]))):0;
   ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,VW,VH);ctx.lineCap='round';ctx.lineJoin='round';
   const occ=eio(seg(p,[SP.mergeA[1]-.04,SP.mergeB[0]+.02]))*(1-oth);
@@ -331,7 +331,7 @@ function render(t,p){
     const D=eo((td-st[k])/DRAW.dur)*1.0001,A=mul(CV,layerW(k,o));
     if(k==='g3')paintFloor('g3',A,0,ik);
     if(k==='up')paintFloor('u3',mul(CV,layerW('u3',o)),occ,ik);
-    if(k==='up'&&p>SP.shrink[0]&&D>=1){if(mmIn<1){ctx.save();ctx.globalAlpha=1-mmIn;drawUpTop(ctx,A,0,ess(seg(p,SP.shrink)),LOOK.topW);ctx.restore()}}
+    if(k==='up'&&p>SP.shrink[0]&&D>=1)drawUpTop(ctx,A,0,ess(seg(p,SP.shrink)),LOOK.topW);
     else drawLayer(ctx,k,A,D,op[k],k==='up'?lerp(LOOK.planW,LOOK.topW,oth):k==='gp'?LOOK.planW:LOOK.solidW,tint[k]);
   }
   ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.lineCap='round';
@@ -365,6 +365,7 @@ function render(t,p){
     }
     ctx.setLineDash([]);ctx.globalAlpha=1;
   }
+  {const pm=document.getElementById('minimap');if(pm&&!done)pm.style.opacity=String(eio(seg(p,[.9,1])))}   // 페이지 미니맵은 도면이 그 자리에 도착한 뒤에만 드러남
   /* clean walls (the minimap's own walls) sit exactly on the traced plan, then ride the shrink into the minimap */
   const dk=ess(seg(p,SP.shrink));
   if(mmA>0){
