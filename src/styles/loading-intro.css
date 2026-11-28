@@ -179,7 +179,7 @@ html.intro-active #intro { display: block; }
 #intro { transition: background-color .75s cubic-bezier(.4, 0, .2, 1); }
 #intro.p-night { background-color: #000622; }
 #intro .ell-outer { transition: stroke-opacity .5s ease, stroke-width .9s cubic-bezier(.65, 0, .25, 1), fill .75s cubic-bezier(.4, 0, .2, 1); }
-#intro.p-night .ell-outer { fill: #000622; }
+#intro.p-line .ell-outer { fill: transparent; transition: none; }
 #intro.p-night .d,
 #intro.p-night .ell,
 #intro.p-night .half,
@@ -203,7 +203,6 @@ html.intro-active #intro { display: block; }
 
 /* ⑥ 바탕은 스플래시와 같은 색이라 투명하게 넘겨도 티가 안 남 → 아래 캔버스에서 도면이 그려지는 게 보임 */
 #intro.p-dissolve { background-color: transparent; transition: none; }
-#intro.p-dissolve .logo { opacity: .85; transition: opacity 1.2s ease; }
 
 /* 모션 줄이기 설정 */
 @media (prefers-reduced-motion: reduce) {

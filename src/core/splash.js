@@ -18,7 +18,7 @@ const S={"plumbX":640.0,"layers":{"up":{"origin":[71.0,419.0],"seed":[612.84,468
 const PRE={splashAt:0};   // the intro (separate) hands over a single centre line; the splash starts from it
 const LOGO={"ellipses": [[959.5, 539.5, 137.04, 340.02, 90.0], [959.5, 539.5, 133.04, 336.06, 90.0], [959.5, 539.5, 128.52, 332.06, 90.0]], "letters": {"I": [[695, 479], [694, 598], [752, 598], [752, 480]], "K": [[782, 480], [782, 598], [840, 598], [841, 552], [870, 598], [940, 598], [896, 532], [896, 530], [931, 481], [931, 479], [872, 479], [841, 524], [839, 479]], "E": [[948, 479], [947, 598], [1057, 598], [1057, 565], [1005, 564], [1006, 551], [1049, 551], [1048, 524], [1006, 524], [1005, 512], [1057, 511], [1057, 479]], "A": [[1107, 479], [1067, 598], [1113, 598], [1120, 578], [1157, 578], [1165, 598], [1225, 598], [1183, 480]], "Atri": [[1139, 516], [1128, 552], [1151, 552]], "R": [[1212, 487], [1212, 502], [1213, 503], [1213, 497], [1218, 496], [1223, 503], [1220, 498], [1222, 494], [1222, 489], [1220, 487]]}, "reg": [1217.08, 494.73, 15.02], "vline": [959.5, 672, 1060]};
 const NAVY='#000c44';
-const TL={reel:[.2,.8],lineEnd:.75,cascade:.3,cue:3.4};   // the intro's centre line is the first construction line: the two iso axes cross it at 2F, the drawing grows from there, the construction lines fade   // intro hands over a full-height centre line; it reels into 2F and the drawing starts there
+const TL={reel:[.2,.8],thread:[1.0,1.5],tail:[1.2,1.75],lineEnd:1.45,cascade:.3,cue:3.4};   // the intro's centre line is the first construction line: the two iso axes cross it at 2F, the drawing grows from there, the construction lines fade   // intro hands over a full-height centre line; it reels into 2F and the drawing starts there
 const DRAW={dur:1.5,soft:.06};   // continuous wavefront from the start point; fresh strokes fade in so the front reads soft             // drafting order: long lines first (outlines → walls → furniture), each traced from the start point outward   // the thread reaches 2F, the floors below follow in a cascade   // splash time starts at PRE.splashAt
 /* ===== scroll-driven sequence (0 → 1) ===== */
 const SP={
@@ -44,7 +44,7 @@ const _q=new URLSearchParams(location.search);
 const GLOW={u3:_q.get('gb')?'#'+_q.get('gb'):'#c4e2ff',g3:_q.get('gy')?'#'+_q.get('gy'):'#fff3b8'};
 const SCROLL_PX=3000;   // wheel distance for the whole sequence
 // 자동 재생: 도면이 다 그려진 뒤(start초) dur초 동안 끝까지 저절로 진행. 스크롤 없이 보고, 원하면 Skip.
-const AUTO={start:3.1,dur:7.5};let skipped=false,revealed=false,started=false;
+const AUTO={start:3.8,dur:7.5};let skipped=false,revealed=false,started=false;
 const LOOK={line:'#e9edf6',solidW:1.25,planW:.75,planA:.3,topW:1.6,guide:'#d2cdc6',bg:'#000622'};
 const IKEA_COLORS=false;   // set false to drop the blue/yellow facade
 const IKEA={blue:'#0058A3',yellow:'#FFDB00',wallH:{u3:90,g3:88},band:12};
@@ -329,10 +329,15 @@ function render(t,p){
   ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.lineCap='round';
   /* centre line: fades in from the dark at the top, brightens toward its tip; touching 2F it sends a small ripple
      across the floor, the drawing starts there, and the line is drawn into that point */
-  {const [x,y]=ap(Cm,S.plumbX,S.layers.u3.seed[1]);window.__fpSeed=[x/dpr,y/dpr];   // the intro's centre line draws itself into the point where 2F starts
+  {const [x,y]=ap(Cm,S.plumbX,S.layers.u3.seed[1]);   // the intro's centre line draws itself into the point where 2F starts
    const r=eio(seg(td,TL.reel)),top=lerp(0,y,r),bot=lerp(VH,y,r);
    if(false&&bot-top>.5){ctx.lineCap='butt';ctx.globalAlpha=.9;ctx.strokeStyle=LOOK.line;ctx.lineWidth=1*dpr;
-     ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,bot);ctx.stroke();ctx.lineCap='round';ctx.globalAlpha=1}}
+     ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,bot);ctx.stroke();ctx.lineCap='round';ctx.globalAlpha=1}
+   // 로고 선이 모인 점(인트로 타원 아래 중앙)에서 선 하나가 뻗어 나가 도면 시작점에 닿고, 꼬리가 따라 들어가면서 도면이 그려지기 시작
+   const ip=window.__introPoint;
+   if(ip){const ax=ip[0]*dpr,ay=ip[1]*dpr,h=eio(seg(td,TL.thread)),tl=eio(seg(td,TL.tail));
+     if(h>0&&tl<1){ctx.lineCap='round';ctx.globalAlpha=.95;ctx.strokeStyle=LOOK.line;ctx.lineWidth=1.3*dpr;
+       ctx.beginPath();ctx.moveTo(lerp(ax,x,tl),lerp(ay,y,tl));ctx.lineTo(lerp(ax,x,h),lerp(ay,y,h));ctx.stroke();ctx.globalAlpha=1}}}
   /* guides: short dashed connectors in the gaps between floors, corner to corner; they shrink away as the floors meet */
   const gIn=eio(seg(p,SP.guidesIn)),gOut=1-seg(p,SP.guidesOut);
   if(gIn>0&&gOut>0){
